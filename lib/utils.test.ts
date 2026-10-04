@@ -141,9 +141,9 @@ describe("buildSearchText", () => {
     expect(buildSearchText("# 标题\n\n正文内容")).toBe("标题 正文内容");
   });
 
-  it("超过上限时截断到 800 字", () => {
+  it("完整保留长正文文本", () => {
     const long = "字".repeat(1000);
-    expect(buildSearchText(long).length).toBe(800);
+    expect(buildSearchText(long)).toBe(long);
   });
 
   it("上限内原样返回", () => {

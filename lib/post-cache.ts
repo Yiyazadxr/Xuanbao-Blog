@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 export function revalidatePostContent() {
   revalidatePath("/");
   revalidatePath("/blog", "layout");
-  revalidatePath("/api/search-index");
   revalidatePath("/sitemap.xml");
   revalidatePath("/feed.xml");
   revalidatePath("/admin/posts");

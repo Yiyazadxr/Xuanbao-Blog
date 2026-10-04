@@ -6,3 +6,17 @@ export type PostPageResponse = {
   total: number;
   page: number;
 };
+
+export type PostSearchResponse = {
+  posts: (Omit<PostListItem, "createdAt"> & { createdAt: string; snippet: string | null })[];
+  total: number;
+  page: number;
+};
+
+export type PostConflict = {
+  updatedAt: string;
+  title: string;
+  slug: string;
+  excerpt: string | null;
+  content: string;
+};

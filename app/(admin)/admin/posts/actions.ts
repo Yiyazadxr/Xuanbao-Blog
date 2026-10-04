@@ -11,10 +11,11 @@ import { revalidatePostContent } from "@/lib/post-cache";
 import { batchWritePosts, PostWriteError, restoreRevision, writePost } from "@/lib/post-write";
 import { batchPostsSchema, parseId, parseInput, postSchema } from "@/lib/validation";
 import type { AdminActionState } from "../action-types";
+import type { PostConflict } from "@/lib/post-page-types";
 
 export async function savePost(
   payload: unknown
-): Promise<AdminActionState & { id?: string }> {
+): Promise<AdminActionState & { id?: string; conflict?: PostConflict }> {
   const admin = await requirePermission(PERMISSIONS.MANAGE_POSTS);
   if (!admin) return { ok: false, error: "无权限" };
 
@@ -29,7 +30,22 @@ export async function savePost(
     revalidatePostContent();
     return { ok: true, message: p.id ? "已保存" : "已创建", id: postId };
   } catch (e) {
-    if (e instanceof PostWriteError) return { ok: false, error: e.message };
+    if (e instanceof PostWriteError) {
+      if (e.code === "CONFLICT" && p.id) {
+        const current = await prisma.post.findUnique({
+          where: { id: p.id },
+          select: { updatedAt: true, title: true, slug: true, excerpt: true, content: true },
+        });
+        if (current) {
+          return {
+            ok: false,
+            error: e.message,
+            conflict: { ...current, updatedAt: current.updatedAt.toISOString() },
+          };
+        }
+      }
+      return { ok: false, error: e.message };
+    }
     console.error("保存文章失败：", e);
     return { ok: false, error: "保存失败，请稍后重试" };
   }

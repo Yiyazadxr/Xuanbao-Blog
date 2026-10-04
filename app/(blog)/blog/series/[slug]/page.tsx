@@ -1,13 +1,10 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Suspense } from "react";
-import { PostGridSkeleton } from "@/components/blog/PostCardSkeleton";
-import { PostListPaginated } from "@/components/blog/PostListPaginated";
+import { SeriesChapters } from "@/components/blog/SeriesChapters";
 import { websiteOpenGraph } from "@/lib/metadata";
-import { getPosts, getSeriesBySlug } from "@/lib/posts";
+import { getSeriesBySlug, getSeriesChapters } from "@/lib/posts";
 import { SITE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
-import { POSTS_PER_PAGE } from "@/lib/pagination";
 
 export const revalidate = 60;
 
@@ -42,17 +39,15 @@ export default async function SeriesPage({
   const series = await getSeriesBySlug(slug);
   if (!series) notFound();
 
-  const { posts, total } = await getPosts({ seriesSlug: slug, take: POSTS_PER_PAGE });
+  const chapters = await getSeriesChapters(series.id);
 
   return (
     <>
       <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">{series.name}</h1>
       {series.description && <p className="mt-2 text-muted">{series.description}</p>}
-      <p className="mt-1 text-sm text-muted">共 {total} 篇文章</p>
+      <p className="mt-1 text-sm text-muted">共 {chapters.length} 篇文章，按连载顺序排列</p>
       <div className="mt-8">
-        <Suspense fallback={<PostGridSkeleton />}>
-          <PostListPaginated posts={posts} total={total} basePath={`/blog/series/${slug}`} serverPaginated filters={{ seriesSlug: slug }} />
-        </Suspense>
+        <SeriesChapters chapters={chapters} />
       </div>
     </>
   );

@@ -5,7 +5,12 @@ import { slugify } from "@/lib/slug";
 import type { z } from "zod";
 import type { postSchema, batchPostsSchema } from "@/lib/validation";
 
-export class PostWriteError extends Error {}
+export class PostWriteError extends Error {
+  constructor(message: string, public readonly code?: "CONFLICT") {
+    super(message);
+    this.name = "PostWriteError";
+  }
+}
 
 export async function writePost(p: z.infer<typeof postSchema>, authorId: string) {
   return prisma.$transaction(async (tx) => {
@@ -14,7 +19,7 @@ export async function writePost(p: z.infer<typeof postSchema>, authorId: string)
     }) : null;
     if (p.id && !existing) throw new PostWriteError("文章不存在");
     if (existing && existing.updatedAt.toISOString() !== p.expectedUpdatedAt) {
-      throw new PostWriteError("文章已被修改或草稿版本已过期。请先复制当前修改，再重新打开文章核对后保存。");
+      throw new PostWriteError("文章已被修改或草稿版本已过期。请先对比当前版本后再保存。", "CONFLICT");
     }
     const slug = slugify(p.slug.trim() || p.title);
     if (await tx.post.findFirst({ where: { slug, ...(p.id ? { id: { not: p.id } } : {}) } })) {

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { savePost, uploadImage } from "@/app/(admin)/admin/posts/actions";
+import type { PostConflict } from "@/lib/post-page-types";
 import { errorCls, inputCls, labelCls, primaryBtnCls } from "@/components/ui/form-styles";
 import { EXCERPT_MAX } from "@/lib/validation";
 import { slugify } from "@/lib/slug";
@@ -75,6 +76,7 @@ export function PostEditor({
   const [featured, setFeatured] = useState(post?.featured ?? false);
   const [content, setContent] = useState(post?.content ?? "");
   const [error, setError] = useState("");
+  const [conflict, setConflict] = useState<PostConflict | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -164,6 +166,7 @@ export function PostEditor({
 
   function submit(published: boolean) {
     setError("");
+    setConflict(null);
     const payload = {
       id: post?.id,
       expectedUpdatedAt,
@@ -190,6 +193,7 @@ export function PostEditor({
         router.refresh();
       } else {
         setError(result.error ?? "保存失败");
+        setConflict(result.conflict ?? null);
       }
       } catch {
         setError("保存失败，请稍后重试；当前修改已保留。");
@@ -203,6 +207,41 @@ export function PostEditor({
         <p role="alert" className={errorCls}>
           {error}
         </p>
+      )}
+      {conflict && (
+        <section className="rounded-xl border border-amber-500/40 bg-amber-500/5 p-4" aria-labelledby="post-conflict-title">
+          <h2 id="post-conflict-title" className="font-semibold text-amber-700 dark:text-amber-300">文章已被其他窗口修改</h2>
+          <p className="mt-1 text-sm text-muted">请比较当前版本和本地草稿，再决定如何继续。</p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
+              <p className="text-xs font-semibold text-muted">当前版本</p>
+              <p className="mt-2 font-medium">{conflict.title}</p>
+              <p className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-sm text-muted">{conflict.content}</p>
+            </div>
+            <div className="min-w-0 rounded-lg border border-border bg-surface p-3">
+              <p className="text-xs font-semibold text-muted">本地草稿</p>
+              <p className="mt-2 font-medium">{title}</p>
+              <p className="mt-2 max-h-48 overflow-auto whitespace-pre-wrap text-sm text-muted">{content}</p>
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button type="button" className="rounded-lg border border-border px-3 py-2 text-sm font-medium" onClick={() => {
+              setTitle(conflict.title);
+              setSlug(conflict.slug);
+              setSlugTouched(true);
+              setExcerpt(conflict.excerpt ?? "");
+              setContent(conflict.content);
+              setExpectedUpdatedAt(conflict.updatedAt);
+              setConflict(null);
+              setError("已载入当前版本，请检查后保存。");
+            }}>采用当前版本</button>
+            <button type="button" className="rounded-lg bg-accent px-3 py-2 text-sm font-semibold text-accent-foreground" onClick={() => {
+              setExpectedUpdatedAt(conflict.updatedAt);
+              setConflict(null);
+              setError("已保留本地草稿。再次保存将覆盖当前版本。");
+            }}>保留本地草稿</button>
+          </div>
+        </section>
       )}
       {error && post && (
         <button type="button" disabled={pending} onClick={() => {

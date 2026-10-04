@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { EngagementBar } from "@/components/blog/EngagementBar";
+import { ContinueReading } from "@/components/blog/ContinueReading";
+import { SeriesChapters } from "@/components/blog/SeriesChapters";
 import { MobileToc } from "@/components/blog/MobileToc";
 import { PostContent } from "@/components/blog/PostContent";
 import { PostNav } from "@/components/blog/PostNav";
@@ -17,8 +19,10 @@ import { extractToc } from "@/lib/markdown";
 import {
   getAdjacentPosts,
   getPostBySlug,
+  getPublishedPostByLegacySlug,
   getRelatedPosts,
   getSeriesAdjacent,
+  getSeriesChapters,
 } from "@/lib/posts";
 import { formatDate, readingTime } from "@/lib/utils";
 
@@ -37,7 +41,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
-  if (!post) return { title: "文章未找到" };
+  if (!post) {
+    const legacy = await getPublishedPostByLegacySlug(slug);
+    if (legacy) return { title: "正在跳转" };
+    return { title: "文章未找到" };
+  }
 
   const description = post.excerpt ?? post.title;
   const url = `${SITE.url}/blog/${post.slug}`;
@@ -76,23 +84,34 @@ export default async function BlogPostPage({
 }) {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
-  if (!post) notFound();
+  if (!post) {
+    const legacy = await getPublishedPostByLegacySlug(slug);
+    if (legacy) permanentRedirect(`/blog/${legacy.slug}`);
+    notFound();
+  }
 
   const toc = extractToc(post.content);
   const readTime = readingTime(post.content);
-  const [adjacent, seriesAdjacent, related] = await Promise.all([
-    getAdjacentPosts(post.createdAt),
+  const [adjacent, seriesAdjacent, related, seriesChapters] = await Promise.all([
+    getAdjacentPosts(post.id, post.createdAt),
     post.seriesId ? getSeriesAdjacent(post.seriesId, post.id) : Promise.resolve(null),
     getRelatedPosts({
       id: post.id,
       categoryId: post.categoryId,
       tagIds: post.tags.map((t) => t.tag.id),
     }),
+    post.seriesId ? getSeriesChapters(post.seriesId) : Promise.resolve([]),
   ]);
 
   return (
     <>
       <ReadingProgress />
+      <ContinueReading
+        postId={post.id}
+        slug={post.slug}
+        title={post.title}
+        revision={post.updatedAt.toISOString()}
+      />
       <MobileToc toc={toc} />
       {/* 浏览与阅读记录在客户端上报。 */}
       <ViewTracker postId={post.id} slug={post.slug} wordCount={post.wordCount} />
@@ -143,9 +162,11 @@ export default async function BlogPostPage({
 
         <div className="flex gap-12 xl:gap-16">
           <div className="min-w-0 flex-1">
-            <Reveal delay={0.1}>
-              <PostContent content={post.content} />
-            </Reveal>
+            <div id="post-reading-content">
+              <Reveal delay={0.1}>
+                <PostContent content={post.content} />
+              </Reveal>
+            </div>
 
             {/* 个性化状态在客户端获取。 */}
             <EngagementBar postId={post.id} slug={post.slug} title={post.title} />
@@ -184,6 +205,16 @@ export default async function BlogPostPage({
                       <span className="text-muted/50">已是系列最后一篇</span>
                     )}
                   </div>
+                )}
+                {seriesChapters.length > 0 && (
+                  <details className="mt-4 border-t border-border pt-4">
+                    <summary className="cursor-pointer text-sm font-medium text-muted transition-colors hover:text-accent">
+                      查看完整目录（共 {seriesChapters.length} 篇）
+                    </summary>
+                    <div className="mt-3">
+                      <SeriesChapters chapters={seriesChapters} currentPostId={post.id} />
+                    </div>
+                  </details>
                 )}
               </div>
             )}

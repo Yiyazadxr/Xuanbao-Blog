@@ -70,13 +70,9 @@ export function markdownToText(markdown: string): string {
     .trim();
 }
 
-// 搜索文本设上限，避免扩大 RSC payload。
-export const SEARCH_TEXT_MAX = 800;
-
-// 搜索文本在保存时去除 Markdown 并截断。
+// 搜索文本在保存时去除 Markdown，完整保留以支持长文检索。
 export function buildSearchText(markdown: string): string {
-  const text = markdownToText(markdown);
-  return text.length > SEARCH_TEXT_MAX ? text.slice(0, SEARCH_TEXT_MAX) : text;
+  return markdownToText(markdown);
 }
 
 // 从 Markdown 正文提取纯文本摘要（无手动摘要时兜底用）
@@ -85,7 +81,7 @@ export function plainExcerpt(markdown: string, maxLength = 120): string {
   return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
 }
 
-// 从正文纯文本中截取命中关键词前后的片段（全文搜索下拉展示用）；
+// 从正文纯文本中截取命中关键词前后的片段；
 // 关键词未精确命中（如 Fuse 模糊匹配到标题）时返回 null，由调用方回退到摘要
 export function searchSnippet(text: string, query: string, radius = 40): string | null {
   const q = query.trim();

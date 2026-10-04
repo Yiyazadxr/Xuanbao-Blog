@@ -100,7 +100,7 @@ model Post {
   featured    Boolean   @default(false)
   viewCount   Int       @default(0)
   wordCount   Int?      // 纯文字字数（保存时计算，页脚只做 sum 加法，避免实时读全文）
-  searchText  String?   // 搜索索引正文（去 Markdown 后截断，保存时计算，搜索时不再回读 content）
+  searchText  String?   // 搜索索引正文（去 Markdown 后完整保存，搜索时不再回读 content）
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

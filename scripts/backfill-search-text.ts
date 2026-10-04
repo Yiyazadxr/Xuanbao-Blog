@@ -1,4 +1,4 @@
-// 为存量文章回填 searchText，否则搜索只能命中标题和摘要。
+// 为存量文章回填完整 searchText，否则搜索只能命中已有截断文本。
 // 运行：npx tsx scripts/backfill-search-text.ts
 import "dotenv/config";
 import { prisma } from "../lib/prisma";
@@ -7,14 +7,14 @@ import { buildSearchText } from "../lib/utils";
 const BATCH_SIZE = 100;
 
 async function main() {
-  // 一次取出后分批更新，避免空结果持续匹配 where。
-  const targets = await prisma.post.findMany({
-    where: { searchText: null },
-    select: { id: true, title: true, content: true },
+  // 比较完整文本，既补空值也更新历史的截断索引。
+  const posts = await prisma.post.findMany({
+    select: { id: true, title: true, content: true, searchText: true },
   });
+  const targets = posts.filter((post) => post.searchText !== buildSearchText(post.content));
 
   if (targets.length === 0) {
-    console.log("没有需要回填的文章（所有文章都已有 searchText）");
+    console.log("没有需要回填的文章（所有文章都已是完整 searchText）");
     await prisma.$disconnect();
     return;
   }
@@ -26,7 +26,7 @@ async function main() {
       batch.map((p) =>
         prisma.post.update({
           where: { id: p.id },
-          data: { searchText: buildSearchText(p.content ?? "") },
+          data: { searchText: buildSearchText(p.content) },
         })
       )
     );

@@ -5,6 +5,7 @@ import { postPageQuerySchema } from "@/lib/validation";
 import type { PostPageResponse } from "@/lib/post-page-types";
 
 export async function GET(request: Request) {
+  const started = performance.now();
   const parsed = postPageQuerySchema.safeParse(Object.fromEntries(new URL(request.url).searchParams));
   if (!parsed.success) return NextResponse.json({ error: "参数不合法" }, { status: 400 });
   const { page: input, ...filters } = parsed.data;
@@ -16,5 +17,12 @@ export async function GET(request: Request) {
     posts: posts.map((post) => ({ ...post, createdAt: post.createdAt.toISOString() })),
     total, page: clampPage(requested, total),
   };
-  return NextResponse.json(response);
+  const duration = Math.max(0, performance.now() - started).toFixed(1);
+  return NextResponse.json(response, {
+    headers: {
+      "Cache-Control": "public, max-age=0, s-maxage=60, stale-while-revalidate=300",
+      "Server-Timing": `query;dur=${duration}`,
+      "X-Result-Count": String(posts.length),
+    },
+  });
 }

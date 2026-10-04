@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { BlogPostsClient } from "@/components/blog/BlogPostsClient";
 import { websiteOpenGraph } from "@/lib/metadata";
 import { getCategoriesWithCount, getPosts } from "@/lib/posts";
@@ -20,5 +21,14 @@ export default async function BlogPage() {
     getCategoriesWithCount(),
   ]);
 
-  return <BlogPostsClient posts={posts} total={total} categories={categories} />;
+  return (
+    <>
+      <div className="mb-5 flex items-center justify-end">
+        <Link href="/reading" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted transition-colors hover:text-accent">
+          最近阅读
+        </Link>
+      </div>
+      <BlogPostsClient posts={posts} total={total} categories={categories} />
+    </>
+  );
 }

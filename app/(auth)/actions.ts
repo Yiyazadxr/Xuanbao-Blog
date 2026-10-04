@@ -45,7 +45,7 @@ export async function applyAction(
   });
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
 
-  // 未配置 hCaptcha 密钥时放行。
+  // 未配置 hCaptcha 密钥时跳过验证。
   if (!(await verifyHCaptcha(String(formData.get("captcha") ?? "")))) {
     return { ok: false, error: "人机验证未通过，请重新验证" };
   }
@@ -73,7 +73,7 @@ export async function registerAction(
   });
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
 
-  // 未配置 hCaptcha 密钥时放行。
+  // 未配置 hCaptcha 密钥时跳过验证。
   if (!(await verifyHCaptcha(String(formData.get("captcha") ?? "")))) {
     return { ok: false, error: "人机验证未通过，请重新验证" };
   }

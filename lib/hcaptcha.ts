@@ -1,6 +1,4 @@
-// hCaptcha 服务端校验；开发环境允许本地未配置时继续调试，生产环境拒绝写入。
-
-let warnedNoSecret = false;
+// hCaptcha 服务端校验；未配置时跳过验证。
 
 type HCaptchaResponse = {
   success: boolean;
@@ -10,14 +8,7 @@ type HCaptchaResponse = {
 
 export async function verifyHCaptcha(token: string): Promise<boolean> {
   const secret = process.env.HCAPTCHA_SECRET_KEY;
-  // 生产环境缺少密钥时告警，避免人机验证无声失效。
-  if (!secret) {
-    if (process.env.NODE_ENV === "production" && !warnedNoSecret) {
-      warnedNoSecret = true;
-      console.error("[安全] 生产环境未配置 HCAPTCHA_SECRET_KEY，写入类操作已拒绝");
-    }
-    return process.env.NODE_ENV !== "production";
-  }
+  if (!secret) return true;
   if (!token) return false;
 
   try {

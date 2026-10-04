@@ -94,6 +94,14 @@ export function UserMenu() {
             收藏
           </Link>
           <Link
+            href="/reading"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className="block px-4 py-2.5 text-sm text-muted transition-colors duration-150 hover:bg-foreground/5 hover:text-foreground"
+          >
+            最近阅读
+          </Link>
+          <Link
             href="/settings"
             role="menuitem"
             onClick={() => setOpen(false)}

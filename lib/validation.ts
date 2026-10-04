@@ -129,6 +129,11 @@ export const postPageQuerySchema = z.object({
   seriesSlug: z.string().trim().min(1).max(200).optional(),
 }).strict();
 
+export const postSearchQuerySchema = z.object({
+  q: z.string().trim().min(1).max(100),
+  page: z.string().max(16).optional(),
+}).strict();
+
 export const commentCursorSchema = z.object({
   id: z.string().min(1).max(100),
   createdAt: z.iso.datetime(),

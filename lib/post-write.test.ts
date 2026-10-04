@@ -21,7 +21,7 @@ describe("旧编辑表单校验", () => {
     vi.clearAllMocks();
     tx.post.findUnique.mockResolvedValue({ id: "post", updatedAt: new Date("2026-01-01T00:00:00Z") });
     const input = postSchema.parse({ id: "post", title: "标题", content: "正文", published: false, featured: false, expectedUpdatedAt });
-    await expect(writePost(input, "admin")).rejects.toThrow("草稿版本已过期");
+    await expect(writePost(input, "admin")).rejects.toMatchObject({ code: "CONFLICT" });
     expect(snapshot).not.toHaveBeenCalled();
     expect(tx.post.update).not.toHaveBeenCalled();
     expect(tx.tag.upsert).not.toHaveBeenCalled();

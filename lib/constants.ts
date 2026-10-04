@@ -14,7 +14,7 @@ export const SITE = {
 // 查询保护上限；分页 UI 仍在客户端工作，避免一次请求拖入整张表。
 export const QUERY_LIMITS = {
   postList: 50,
-  searchIndex: 200,
+  searchPage: 20,
   archive: 1000,
   seriesAdjacent: 200,
 } as const;
