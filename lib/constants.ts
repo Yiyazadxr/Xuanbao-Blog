@@ -17,6 +17,8 @@ export const QUERY_LIMITS = {
   searchPage: 20,
   archive: 1000,
   seriesAdjacent: 200,
+  // sitemap 语义上收录最新条目；超出上限的旧条目不进 sitemap。
+  sitemap: 5000,
 } as const;
 
 // 邮箱与 QQ 号仅在客户端组件中拼接渲染，不出现在 SSR HTML（见 EmailCard / QQCard）

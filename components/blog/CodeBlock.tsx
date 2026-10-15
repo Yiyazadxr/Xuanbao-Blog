@@ -2,6 +2,7 @@
 
 import { isValidElement, useRef, type ClassAttributes, type HTMLAttributes } from "react";
 import type { ExtraProps } from "react-markdown";
+import { Icon } from "@/components/ui/Icon";
 import { useCopyFeedback } from "@/lib/use-copy-feedback";
 
 // Clipboard API 不可用时回退到 execCommand。
@@ -61,35 +62,11 @@ export function CodeBlock({
           className="pointer-events-auto flex size-7 cursor-pointer items-center justify-center rounded text-zinc-400 transition-colors hover:bg-white/10 hover:text-zinc-100"
         >
           {copied ? (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <path
-                d="M13.5 4.5L6 12l-3.5-3.5"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Icon icon="ph:check-bold" width={15} height={15} aria-hidden />
           ) : failed ? (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <path
-                d="M4 4l8 8M12 4l-8 8"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
+            <Icon icon="ph:x-bold" width={15} height={15} aria-hidden />
           ) : (
-            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
-              <rect x="5.5" y="5.5" width="8" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
-              <path
-                d="M3.5 10.5h-.5a1.5 1.5 0 0 1-1.5-1.5v-6A1.5 1.5 0 0 1 3 1.5h6A1.5 1.5 0 0 1 10.5 3v.5"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-              />
-            </svg>
+            <Icon icon="ph:copy-bold" width={15} height={15} aria-hidden />
           )}
         </button>
       </div>

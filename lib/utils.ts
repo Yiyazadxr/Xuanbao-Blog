@@ -28,6 +28,11 @@ export function formatDateTime(date: Date | string): string {
   return new Date(date).toLocaleString("zh-CN");
 }
 
+// 两个日期之间的整天数（向下取整，未来时间钳到 0）；注册天数与建站天数共用。
+export function daysBetween(from: Date | string | number, to: Date | string | number = Date.now()): number {
+  return Math.max(0, Math.floor((new Date(to).getTime() - new Date(from).getTime()) / 86_400_000));
+}
+
 // 统计中文字符数 + 英文/数字词数（去除 Markdown 符号/标点）。
 // Unicode 脚本属性覆盖扩展汉字、假名和谚文。
 const CJK_RE =

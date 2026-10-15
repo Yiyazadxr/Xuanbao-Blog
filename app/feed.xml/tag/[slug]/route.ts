@@ -1,9 +1,6 @@
 // RSS 订阅源：某标签下的文章，分页（?page=N）
 import { SITE } from "@/lib/constants";
-import { prisma } from "@/lib/prisma";
-import { buildRssFeed, fetchRssPosts, parsePage } from "@/lib/rss";
-
-export const dynamic = "force-dynamic";
+import { buildRssFeed, getCachedRssFeedData, parsePage } from "@/lib/rss";
 
 export async function GET(
   request: Request,
@@ -13,19 +10,16 @@ export async function GET(
   const url = new URL(request.url);
   const page = parsePage(url.searchParams);
 
-  const tag = await prisma.tag.findUnique({ where: { slug }, select: { name: true } });
-  if (!tag) {
+  const data = await getCachedRssFeedData("tag", slug, page);
+  if (!data) {
     return new Response("Not Found", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
   }
 
-  const { posts, total } = await fetchRssPosts({
-    where: { published: true, archived: false, tags: { some: { tag: { slug } } } },
-    page,
-  });
+  const { posts, total } = data;
 
   return buildRssFeed({
-    title: `${SITE.name} · 标签「${tag.name}」`,
-    description: `${SITE.name}「${tag.name}」标签下的文章订阅`,
+    title: `${SITE.name} · 标签「${data.name}」`,
+    description: `${SITE.name}「${data.name}」标签下的文章订阅`,
     feedPath: `tag/${slug}`,
     posts,
     page,

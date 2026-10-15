@@ -5,7 +5,7 @@ import { getFreshUser } from "@/lib/auth";
 import { getBookmarkCount } from "@/lib/bookmarks";
 import { getReadingStats } from "@/lib/reading";
 import { type Role } from "@/lib/roles";
-import { formatDate } from "@/lib/utils";
+import { daysBetween, formatDate } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "设置" };
 export const dynamic = "force-dynamic";
@@ -16,7 +16,7 @@ export default async function SettingsPage() {
   if (!user) redirect("/");
 
   const role = user.role as Role;
-  const days = Math.max(0, Math.floor((new Date().getTime() - user.createdAt.getTime()) / 86400000));
+  const days = daysBetween(user.createdAt);
   const joinedDate = formatDate(user.createdAt);
   const [readingStats, bookmarkCount] = await Promise.all([
     getReadingStats(user.id),

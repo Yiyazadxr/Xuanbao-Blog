@@ -24,6 +24,7 @@ const USED_ICONS = [
   "check-bold",
   "cloud-bold",
   "code-bold",
+  "copy-bold",
   "cursor-click-bold",
   "database-bold",
   "devices-bold",

@@ -24,7 +24,7 @@ import {
   getSeriesAdjacent,
   getSeriesChapters,
 } from "@/lib/posts";
-import { formatDate, readingTime } from "@/lib/utils";
+import { formatDate, readingTimeFromWordCount } from "@/lib/utils";
 
 // 公开文章使用 ISR；个性化数据在客户端按需获取。
 export const revalidate = 60;
@@ -91,7 +91,8 @@ export default async function BlogPostPage({
   }
 
   const toc = extractToc(post.content);
-  const readTime = readingTime(post.content);
+  // 与列表页共用落库 wordCount 口径，避免每次渲染对全文重新计字。
+  const readTime = readingTimeFromWordCount(post.wordCount);
   const [adjacent, seriesAdjacent, related, seriesChapters] = await Promise.all([
     getAdjacentPosts(post.id, post.createdAt),
     post.seriesId ? getSeriesAdjacent(post.seriesId, post.id) : Promise.resolve(null),

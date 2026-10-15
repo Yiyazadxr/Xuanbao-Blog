@@ -85,17 +85,16 @@ export async function muteUser(
     data: { mutedDuring, mutedPermanent: permanent, mutedReason: reasonText || null },
   });
 
-  if (target.role !== ROLES.SUPER_ADMIN) {
-    const untilText = permanent
-      ? "永久禁言"
-      : `禁言至 ${formatDateTime(mutedDuring!)}`;
-    await createNotification(uid, {
-      category: NOTIFICATION_CATEGORIES.SYSTEM,
-      type: "muted",
-      actorName: admin.name,
-      title: `你已被${untilText}${reasonText ? `，原因：${reasonText}` : ""}`,
-    });
-  }
+  // SUPER_ADMIN 已在上面拦截，此处直接通知。
+  const untilText = permanent
+    ? "永久禁言"
+    : `禁言至 ${formatDateTime(mutedDuring!)}`;
+  await createNotification(uid, {
+    category: NOTIFICATION_CATEGORIES.SYSTEM,
+    type: "muted",
+    actorName: admin.name,
+    title: `你已被${untilText}${reasonText ? `，原因：${reasonText}` : ""}`,
+  });
 
   revalidatePath("/admin/users");
   return { ok: true, message: permanent ? "已永久禁言" : `已禁言 ${parsed.data.days} 天` };

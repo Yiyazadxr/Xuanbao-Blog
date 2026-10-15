@@ -1,4 +1,5 @@
 // RSS 2.0 分页使用 RFC 5005 的 self、next 和 previous 链接。
+import { unstable_cache } from "next/cache";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SITE } from "@/lib/constants";
@@ -29,7 +30,7 @@ export function escapeXml(text: string): string {
     .replaceAll("'", "&apos;");
 }
 
-export async function fetchRssPosts({
+async function fetchRssPosts({
   where,
   page,
 }: {
@@ -70,6 +71,32 @@ export async function fetchRssPosts({
 
   return { posts, total };
 }
+
+export type RssFeedKind = "all" | "category" | "series" | "tag";
+
+// Route Handler 要读取请求 URL，不能整体静态缓存；按订阅类型、slug 和页码缓存数据库结果。
+export const getCachedRssFeedData = unstable_cache(
+  async (kind: RssFeedKind, slug: string, page: number) => {
+    let name: string | null = null;
+    const where: Prisma.PostWhereInput = { published: true, archived: false };
+
+    if (kind === "category") {
+      name = (await prisma.category.findUnique({ where: { slug }, select: { name: true } }))?.name ?? null;
+      where.category = { slug };
+    } else if (kind === "series") {
+      name = (await prisma.series.findUnique({ where: { slug }, select: { name: true } }))?.name ?? null;
+      where.series = { slug };
+    } else if (kind === "tag") {
+      name = (await prisma.tag.findUnique({ where: { slug }, select: { name: true } }))?.name ?? null;
+      where.tags = { some: { tag: { slug } } };
+    }
+
+    if (kind !== "all" && !name) return null;
+    return { name, ...await fetchRssPosts({ where, page }) };
+  },
+  ["rss-feed-data"],
+  { revalidate: 60 }
+);
 
 // 非法页码回落到第 1 页，并钳制到上限。
 export function parsePage(searchParams: URLSearchParams): number {

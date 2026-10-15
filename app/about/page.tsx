@@ -15,6 +15,9 @@ export const metadata: Metadata = {
   openGraph: websiteOpenGraph("关于作者", aboutDescription, "/about"),
 };
 
+// 含博主资料查询；资料变更由设置页 revalidatePath("/about") 即时刷新。
+export const revalidate = 60;
+
 export default async function AboutPage() {
   const blogger = await prisma.user.findFirst({
     where: { role: ROLES.SUPER_ADMIN },

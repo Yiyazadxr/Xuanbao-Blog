@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { muteUser, unmuteUser } from "@/app/(admin)/admin/users/actions";
 import { formatDateTime } from "@/lib/utils";
 
@@ -16,6 +16,9 @@ export function MuteUserButton({
   muteInfo: { permanent: boolean; until: string | null; reason: string | null };
 }) {
   const router = useRouter();
+  // 同一页面存在多个实例（每用户行一个），id 必须唯一。
+  const daysId = useId();
+  const reasonId = useId();
   const [open, setOpen] = useState(false);
   const [days, setDays] = useState("7");
   const [reason, setReason] = useState("");
@@ -97,8 +100,9 @@ export function MuteUserButton({
             </div>
           ) : (
             <form onSubmit={handleMute} className="space-y-3">
-              <label className="block text-xs font-medium text-muted">禁言天数（0 为永久）</label>
+              <label htmlFor={daysId} className="block text-xs font-medium text-muted">禁言天数（0 为永久）</label>
               <input
+                id={daysId}
                 type="number"
                 min={0}
                 max={3650}
@@ -106,8 +110,9 @@ export function MuteUserButton({
                 onChange={(e) => setDays(e.target.value)}
                 className="h-9 w-full rounded-lg border border-border bg-surface px-3 text-sm outline-none transition-colors duration-200 focus:border-accent"
               />
-              <label className="block text-xs font-medium text-muted">原因</label>
+              <label htmlFor={reasonId} className="block text-xs font-medium text-muted">原因</label>
               <input
+                id={reasonId}
                 type="text"
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}

@@ -1,19 +1,23 @@
 import type { MetadataRoute } from "next";
-import { SITE } from "@/lib/constants";
+import { QUERY_LIMITS, SITE } from "@/lib/constants";
 import { prisma } from "@/lib/prisma";
 
 // 与公开页面一致，避免爬虫每次请求直达数据库。
 export const revalidate = 60;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // 四类条目均设 take 上限：文章按更新时间取最新，分类/标签/系列按名称稳定选取；
+  // 超出上限的条目不进 sitemap（个人博客量级远低于上限，仅防止异常数据拖慢生成）。
   const [posts, categories, series, tags] = await Promise.all([
     prisma.post.findMany({
       where: { published: true, archived: false },
+      orderBy: { updatedAt: "desc" },
+      take: QUERY_LIMITS.sitemap,
       select: { slug: true, updatedAt: true },
     }),
-    prisma.category.findMany({ select: { slug: true } }),
-    prisma.series.findMany({ select: { slug: true } }),
-    prisma.tag.findMany({ select: { slug: true } }),
+    prisma.category.findMany({ orderBy: { name: "asc" }, take: QUERY_LIMITS.sitemap, select: { slug: true } }),
+    prisma.series.findMany({ orderBy: { name: "asc" }, take: QUERY_LIMITS.sitemap, select: { slug: true } }),
+    prisma.tag.findMany({ orderBy: { name: "asc" }, take: QUERY_LIMITS.sitemap, select: { slug: true } }),
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [

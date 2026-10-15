@@ -56,6 +56,7 @@ export async function updateAvatar(_prev: SettingsState, formData: FormData): Pr
   }
 
   revalidatePath("/settings");
+  revalidatePath("/about");
   return { ok: true, message: "头像已更新" };
 }
 
@@ -73,6 +74,7 @@ export async function deleteAvatar(
   await deleteImage(user.image);
 
   revalidatePath("/settings");
+  revalidatePath("/about");
   return { ok: true, message: "头像已删除" };
 }
 
@@ -96,6 +98,7 @@ export async function updateProfile(
 
   await prisma.user.update({ where: { id: user.id }, data: { name: parsed.data.name } });
   revalidatePath("/settings");
+  revalidatePath("/about");
   return { ok: true, message: "昵称已保存" };
 }
 

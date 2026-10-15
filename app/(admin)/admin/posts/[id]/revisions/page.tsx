@@ -5,6 +5,7 @@ import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import { RevisionList } from "@/components/admin/RevisionList";
 import { prisma } from "@/lib/prisma";
+import { parseId } from "@/lib/validation";
 
 export const metadata: Metadata = { title: "版本历史" };
 export const dynamic = "force-dynamic";
@@ -17,14 +18,16 @@ export default async function PostRevisionsPage({
 }) {
   if (!(await requirePermission(PERMISSIONS.MANAGE_POSTS))) redirect("/admin");
   const { id } = await params;
+  const parsed = parseId(id);
+  if (!parsed.data) notFound();
   const post = await prisma.post.findUnique({
-    where: { id },
+    where: { id: parsed.data },
     select: { id: true, title: true },
   });
   if (!post) notFound();
 
   const revisions = await prisma.postRevision.findMany({
-    where: { postId: id },
+    where: { postId: parsed.data },
     orderBy: { createdAt: "desc" },
     take: 50,
     select: { id: true, title: true, content: true, published: true, archived: true, createdAt: true },

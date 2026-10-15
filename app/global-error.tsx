@@ -12,7 +12,7 @@ export default function RootGlobalError({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
-    console.error("根布局错误：", error.digest ?? error);
+    console.error("根布局错误：", error.digest);
   }, [error]);
 
   return (
@@ -39,6 +39,11 @@ export default function RootGlobalError({
           <p style={{ margin: 0, fontSize: "0.875rem", color: "#78716c" }}>
             出了点小问题，请稍后重试
           </p>
+          {error.digest && (
+            <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "#a1a1aa" }}>
+              错误编号：{error.digest}
+            </p>
+          )}
           <button
             onClick={unstable_retry}
             style={{

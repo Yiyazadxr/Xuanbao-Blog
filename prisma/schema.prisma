@@ -249,6 +249,8 @@ model RateLimit {
   count     Int      @default(0)
   resetAt   DateTime
   updatedAt DateTime @updatedAt
+
+  @@index([resetAt])
 }
 
 // 站内通知：category 为分类（system 系统 / like 赞 / comment 评论与回复），type 为细分事件

@@ -7,7 +7,7 @@ import { requirePermission } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
 import { prisma } from "@/lib/prisma";
 import { parseId } from "@/lib/validation";
-import { formatDate, readingTime } from "@/lib/utils";
+import { formatDate, readingTimeFromWordCount } from "@/lib/utils";
 
 export const metadata: Metadata = { title: "预览文章" };
 export const dynamic = "force-dynamic";
@@ -61,7 +61,7 @@ export default async function PreviewPostPage({
           )}
           <p className="mt-4 text-sm text-muted">
             {post.publishedAt ? formatDate(post.publishedAt) : formatDate(post.updatedAt)} · 约{" "}
-            {readingTime(post.content)} 分钟
+            {readingTimeFromWordCount(post.wordCount)} 分钟
           </p>
         </header>
         <div className="mt-10">

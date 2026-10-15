@@ -4,7 +4,7 @@ import { QUERY_LIMITS, SITE } from "@/lib/constants";
 import { recordDailyView } from "@/lib/daily-stats";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
-import { readingTimeFromWordCount, searchSnippet } from "@/lib/utils";
+import { readingTimeFromWordCount, daysBetween, searchSnippet } from "@/lib/utils";
 
 // 公开可见的文章过滤条件：已发布且未归档（草稿/归档均不进入前台）
 export const PUBLISHED_FILTER = { published: true, archived: false } as const;
@@ -386,10 +386,7 @@ export const getSiteStats = unstable_cache(
       _sum: { viewCount: true, wordCount: true },
     });
 
-    const days = Math.max(
-      0,
-      Math.floor((Date.now() - new Date(SITE.launchedAt).getTime()) / 86_400_000)
-    );
+    const days = daysBetween(SITE.launchedAt);
 
     return {
       days,

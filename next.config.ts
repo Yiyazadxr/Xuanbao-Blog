@@ -1,5 +1,14 @@
 import type { NextConfig } from "next";
 
+// 生产缺失 NEXT_PUBLIC_SITE_URL 时会静默回落 localhost，
+// 导致 sitemap、canonical 与 OG 绝对地址指向错误域名；构建期显式告警。
+if (process.env.NODE_ENV === "production" && !process.env.NEXT_PUBLIC_SITE_URL) {
+  console.warn(
+    "[next.config] 未配置 NEXT_PUBLIC_SITE_URL，SITE.url 将回落到 http://localhost:3000，" +
+      "sitemap 与 OG 绝对地址会指向错误域名"
+  );
+}
+
 // 基础安全响应头在开发和生产环境生效。
 const baseSecurityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },

@@ -2,8 +2,10 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { UserRowActions } from "@/components/admin/UserRowActions";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { Pagination } from "@/components/ui/Pagination";
 import { getFreshUser } from "@/lib/auth";
 import { PERMISSIONS } from "@/lib/permissions";
+import { parsePage } from "@/lib/pagination";
 import { hasPermission } from "@/lib/permissions-server";
 import { prisma } from "@/lib/prisma";
 import { ROLE_BADGE_CLS, ROLE_LABELS, type Role } from "@/lib/roles";
@@ -12,22 +14,33 @@ import { formatDate } from "@/lib/utils";
 export const metadata: Metadata = { title: "用户管理" };
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 20;
+// 搜索词长度上限，避免超长字符串进入查询。
+const KEYWORD_MAX = 100;
+
+// 用户管理列表：按注册时间排序，支持昵称/邮箱搜索与分页
 export default async function AdminUsersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string }>;
+  searchParams: Promise<{ q?: string; page?: string }>;
 }) {
-  const { q } = await searchParams;
+  const { q, page: pageParam } = await searchParams;
   const me = await getFreshUser();
   if (!me) redirect("/");
   if (!(await hasPermission(me.role as Role, PERMISSIONS.MANAGE_USERS))) redirect("/admin");
 
-  const keyword = q?.trim();
+  const keyword = q?.trim().slice(0, KEYWORD_MAX) || undefined;
+  const where = keyword
+    ? { OR: [{ name: { contains: keyword } }, { email: { contains: keyword } }] }
+    : undefined;
+  const total = await prisma.user.count({ where });
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const page = Math.min(parsePage(pageParam), totalPages);
   const users = await prisma.user.findMany({
-    where: keyword
-      ? { OR: [{ name: { contains: keyword } }, { email: { contains: keyword } }] }
-      : undefined,
+    where,
     orderBy: { createdAt: "asc" },
+    skip: (page - 1) * PAGE_SIZE,
+    take: PAGE_SIZE,
     select: {
       id: true,
       name: true,
@@ -53,6 +66,7 @@ export default async function AdminUsersPage({
       <p className="mt-2 text-sm text-muted">
         角色层级：超级管理员 &gt; 管理员 &gt; 成员。管理员可管理文章、评论与邀请码，成员可评论点赞。
       </p>
+      <p className="mt-1 text-sm text-muted">共 {total} 位用户</p>
 
       <form action="/admin/users" method="get" className="mt-6 flex max-w-sm gap-2">
         <input
@@ -154,6 +168,13 @@ export default async function AdminUsersPage({
           </tbody>
         </table>
       </div>
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        basePath="/admin/users"
+        searchParams={keyword ? { q: keyword } : undefined}
+      />
     </>
   );
 }

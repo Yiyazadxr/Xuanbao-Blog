@@ -8,18 +8,25 @@ import {
 } from "@/app/settings/display-actions";
 import {
   applyDisplay,
+  DENSITY_DEFAULT,
   DENSITY_OPTIONS,
+  FONT_SCALE_DEFAULT,
   FONT_SCALE_MAX,
   FONT_SCALE_MIN,
   FONT_SCALE_STEP,
+  FOOTER_PY_DEFAULT,
   FOOTER_PY_MAX,
   FOOTER_PY_MIN,
+  HEADER_H_DEFAULT,
   HEADER_H_MAX,
   HEADER_H_MIN,
+  INK_ENABLED_DEFAULT,
   isSyncEnabled,
+  PROSE_LEADING_DEFAULT,
   PROSE_LEADING_MAX,
   PROSE_LEADING_MIN,
   PROSE_LEADING_STEP,
+  READING_PROGRESS_DEFAULT,
   readDensity,
   readFooterPy,
   readFontScale,
@@ -30,10 +37,13 @@ import {
   readSmoothScroll,
   readSpacingScale,
   readWaveIntensity,
+  SMOOTH_SCROLL_DEFAULT,
   setSyncEnabled,
+  SPACING_SCALE_DEFAULT,
   SPACING_SCALE_MAX,
   SPACING_SCALE_MIN,
   SPACING_SCALE_STEP,
+  WAVE_INTENSITY_DEFAULT,
   WAVE_INTENSITY_MAX,
   WAVE_INTENSITY_MIN,
   WAVE_INTENSITY_STEP,
@@ -58,19 +68,21 @@ const rangeCls =
 
 // 显示设置：字体缩放 + 页面间距 + 界面密度（含自定义导航栏/页脚）+ 跨设备同步
 export function DisplayForm() {
-  const [fontScale, setFontScale] = useState(readFontScale);
-  const [spacingScale, setSpacingScale] = useState(readSpacingScale);
-  const [density, setDensity] = useState<Density>(readDensity);
-  const [headerH, setHeaderH] = useState(readHeaderH);
-  const [footerPy, setFooterPy] = useState(readFooterPy);
-  const [sync, setSync] = useState(isSyncEnabled());
+  // SSR 与水合统一使用默认值；本地偏好在挂载后异步恢复，避免渲染期读取
+  // localStorage 造成 hydration mismatch（视觉偏好已由预水合脚本提前应用）。
+  const [fontScale, setFontScale] = useState(FONT_SCALE_DEFAULT);
+  const [spacingScale, setSpacingScale] = useState(SPACING_SCALE_DEFAULT);
+  const [density, setDensity] = useState<Density>(DENSITY_DEFAULT);
+  const [headerH, setHeaderH] = useState(HEADER_H_DEFAULT);
+  const [footerPy, setFooterPy] = useState(FOOTER_PY_DEFAULT);
+  const [sync, setSync] = useState(false);
   const [syncPending, setSyncPending] = useState(false);
   const [msg, setMsg] = useState("");
-  const [waveIntensity, setWaveIntensity] = useState(readWaveIntensity);
-  const [inkEnabled, setInkEnabled] = useState(readInkEnabled);
-  const [proseLeading, setProseLeading] = useState(readProseLeading);
-  const [smoothScroll, setSmoothScroll] = useState(readSmoothScroll);
-  const [readingProgress, setReadingProgress] = useState(readReadingProgress);
+  const [waveIntensity, setWaveIntensity] = useState(WAVE_INTENSITY_DEFAULT);
+  const [inkEnabled, setInkEnabled] = useState(INK_ENABLED_DEFAULT);
+  const [proseLeading, setProseLeading] = useState(PROSE_LEADING_DEFAULT);
+  const [smoothScroll, setSmoothScroll] = useState(SMOOTH_SCROLL_DEFAULT);
+  const [readingProgress, setReadingProgress] = useState(READING_PROGRESS_DEFAULT);
   const reduceMotion = usePrefersReducedMotion();
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -79,6 +91,23 @@ export function DisplayForm() {
     return () => {
       if (persistTimer.current) clearTimeout(persistTimer.current);
     };
+  }, []);
+
+  // localStorage 是外部系统：挂载后经微任务恢复本地偏好，effect 体内不同步 setState。
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      setFontScale(readFontScale());
+      setSpacingScale(readSpacingScale());
+      setDensity(readDensity());
+      setHeaderH(readHeaderH());
+      setFooterPy(readFooterPy());
+      setWaveIntensity(readWaveIntensity());
+      setInkEnabled(readInkEnabled());
+      setProseLeading(readProseLeading());
+      setSmoothScroll(readSmoothScroll());
+      setReadingProgress(readReadingProgress());
+      setSync(isSyncEnabled());
+    });
   }, []);
 
   // 防抖后同步到账号：拖动滑块不触发请求风暴，失败时提示而非静默丢弃

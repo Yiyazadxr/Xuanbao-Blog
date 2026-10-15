@@ -12,8 +12,8 @@ export default function GlobalError({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
-    // 仅记录到服务端日志，digest 可用于匹配服务端日志
-    console.error("页面错误：", error.digest ?? error);
+    // 仅记录 digest，用于匹配服务端日志；不打印 error 对象本体。
+    console.error("页面错误：", error.digest);
   }, [error]);
 
   return (
@@ -21,6 +21,9 @@ export default function GlobalError({
       <p className="font-display text-6xl font-bold tracking-tight text-muted/40">500</p>
       <h2 className="mt-4 text-xl font-bold tracking-tight">页面出错了</h2>
       <p className="mt-2 text-sm text-muted">出了点小问题，请稍后重试</p>
+      {error.digest && (
+        <p className="mt-2 text-xs text-muted/70">错误编号：{error.digest}</p>
+      )}
       <div className="mt-6 flex gap-3">
         <button
           onClick={unstable_retry}

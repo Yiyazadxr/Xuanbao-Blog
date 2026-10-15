@@ -55,6 +55,10 @@ export default async function AdminInvitesPage({
   const reqTotalPages = Math.max(1, Math.ceil(reqTotal / PAGE_SIZE));
   const invTotalPages = Math.max(1, Math.ceil(invTotal / PAGE_SIZE));
 
+  // 服务端请求期间取当前时间，不参与客户端重渲染。
+  // eslint-disable-next-line react-hooks/purity
+  const now = Date.now();
+
   return (
     <>
       <div className="flex items-center justify-between">
@@ -116,7 +120,7 @@ export default async function AdminInvitesPage({
         ) : (
           <ul className="divide-y divide-border">
             {invites.map((invite) => {
-              const expired = invite.expiresAt && invite.expiresAt < new Date();
+              const expired = invite.expiresAt && invite.expiresAt.getTime() < now;
               const exhausted = invite.usedCount >= invite.maxUses;
               return (
                 <li

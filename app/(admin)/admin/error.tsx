@@ -12,13 +12,16 @@ export default function AdminError({
   unstable_retry: () => void;
 }) {
   useEffect(() => {
-    console.error("后台页面错误：", error.digest ?? error);
+    console.error("后台页面错误：", error.digest);
   }, [error]);
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center">
       <h2 className="text-xl font-bold tracking-tight">后台出错了</h2>
       <p className="mt-2 text-sm text-muted">出了点小问题，请稍后重试</p>
+      {error.digest && (
+        <p className="mt-2 text-xs text-muted/70">错误编号：{error.digest}</p>
+      )}
       <div className="mt-6 flex gap-3">
         <button
           onClick={unstable_retry}

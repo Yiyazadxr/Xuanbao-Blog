@@ -1,5 +1,6 @@
 // 数据库固定窗口限流；多实例共享计数。
 import { headers } from "next/headers";
+import { runAfter } from "@/lib/deferred";
 import { prisma } from "@/lib/prisma";
 import { isIP } from "node:net";
 
@@ -8,6 +9,36 @@ function keyName(prefix: string, value: string) {
 }
 
 export type RateLimitVerdict = { blocked: boolean; retryAfterSec: number };
+
+// 去重键（如 view-post）按「访客×文章」组合无限增长，需惰性清理过期行。
+// 删除过期行与窗口重置语义等价：行不存在或已过期的键都不再阻止请求。
+const CLEANUP_PROBABILITY = 0.02;
+const CLEANUP_MIN_INTERVAL_MS = 60 * 60 * 1000;
+// 最长限流窗口为 1 小时，过期后再留 1 小时冗余，避免清理与窗口重置相互追逐。
+const CLEANUP_GRACE_MS = 60 * 60 * 1000;
+let lastCleanupAt = 0;
+
+// 删除已过期超过宽限期的计数行；失败不影响限流主流程。
+export async function cleanupExpiredRateLimits(): Promise<void> {
+  await prisma.rateLimit.deleteMany({
+    where: { resetAt: { lt: new Date(Date.now() - CLEANUP_GRACE_MS) } },
+  });
+}
+
+// 写入路径按概率触发清理；进程内节流，多实例各自独立触发。
+function maybeCleanupExpired(): void {
+  const now = Date.now();
+  if (now - lastCleanupAt < CLEANUP_MIN_INTERVAL_MS) return;
+  if (Math.random() >= CLEANUP_PROBABILITY) return;
+  lastCleanupAt = now;
+  runAfter(async () => {
+    try {
+      await cleanupExpiredRateLimits();
+    } catch (e) {
+      console.error("限流计数清理失败：", e);
+    }
+  });
+}
 
 // 原生 SQL 必须显式写入无默认值的 updatedAt。
 export const rateLimit = {
@@ -34,6 +65,7 @@ export const rateLimit = {
     limit: number,
     windowMs: number
   ): Promise<RateLimitVerdict> {
+    maybeCleanupExpired();
     const key = keyName(prefix, value);
     const nowDate = new Date();
     const nextReset = new Date(nowDate.getTime() + windowMs);
@@ -66,6 +98,7 @@ export const rateLimit = {
 
   // 仅记录，供失败时计数。
   async hit(prefix: string, value: string, windowMs: number): Promise<void> {
+    maybeCleanupExpired();
     const key = keyName(prefix, value);
     const nowDate = new Date();
     const nextReset = new Date(nowDate.getTime() + windowMs);
