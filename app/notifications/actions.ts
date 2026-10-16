@@ -8,6 +8,7 @@ import {
 } from "@/lib/notifications";
 import {
   type NotificationCategory,
+  type NotificationCursor,
   type NotificationItem,
   type NotificationUnreadSummary,
 } from "@/lib/notification-types";
@@ -15,13 +16,13 @@ import { notificationCategorySchema, notificationsQuerySchema, parseId, parseInp
 
 export type NotificationsResult = {
   items: NotificationItem[];
-  nextCursor: string | null;
+  nextCursor: NotificationCursor | null;
   unread: NotificationUnreadSummary;
 };
 
 export async function getNotifications(
   category: NotificationCategory | "all" = "all",
-  cursor?: string
+  cursor?: NotificationCursor
 ): Promise<NotificationsResult> {
   const user = await getFreshUser();
   const empty: NotificationsResult = {

@@ -54,6 +54,8 @@ export type NotificationItem = {
   lastMergedAt: string;
 };
 
+export type NotificationCursor = { id: string; lastMergedAt: string };
+
 // 铃铛和通知中心共用聚合文案。
 // 规则：单个触发者显示其昵称；多个触发者显示首位昵称 + 总人数
 export type NotificationText = {

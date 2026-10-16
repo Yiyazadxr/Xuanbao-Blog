@@ -41,27 +41,36 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   }
   const { slug } = await params;
   if (!slug || slug.length > 200) return NextResponse.json({ error: "bad_request" }, { status: 400 });
+  const user = await getFreshUser();
   const ip = await getClientIp();
-  // 无可信地址时跳过可选统计，不让 unknown 共享桶影响正常业务。
-  if (ip === "unknown") return NextResponse.json({ ok: true });
-  const key = createHash("sha256").update(ip).digest("hex");
-  const pre = await rateLimit.isBlocked("view-ip", key, 30);
-  const check = pre.blocked ? pre : await rateLimit.checkAndHit("view-ip", key, 30, 60_000);
-  if (check.blocked) return NextResponse.json({ error: "rate_limited" }, {
-    status: 429, headers: { "Retry-After": String(check.retryAfterSec) },
-  });
+  // 无可信地址时仅允许已登录用户记录阅读，不查询匿名文章或写浏览量。
+  if (ip === "unknown" && !user) return NextResponse.json({ ok: true });
+  const key = ip === "unknown" ? null : createHash("sha256").update(ip).digest("hex");
+  const pre = key ? await rateLimit.isBlocked("view-ip", key, 30) : null;
+  const check = key ? pre!.blocked ? pre : await rateLimit.checkAndHit("view-ip", key, 30, 60_000) : null;
+  // 匿名超限请求仍在文章查询前返回。
+  if (check?.blocked && !user) return rateLimited(check.retryAfterSec);
+
   const post = await prisma.post.findFirst({
     where: { id: parsed.data.postId, slug, published: true, archived: false },
     select: { id: true, wordCount: true },
   });
   if (!post) return NextResponse.json({ error: "not_found" }, { status: 404 });
+  // 阅读记录按用户去重，不应受共享 IP 的浏览量限流和去重影响。
+  await recordRead(post.id, user?.id, post.wordCount);
+  if (check?.blocked) return rateLimited(check.retryAfterSec);
+  if (!key) return NextResponse.json({ ok: true });
   const dedupKey = `${key}:${post.id}`;
   const seen = await rateLimit.isBlocked("view-post", dedupKey, 0);
   if (seen.blocked) return NextResponse.json({ ok: true });
   const claimed = await rateLimit.checkAndHit("view-post", dedupKey, 1, 30 * 60_000);
   if (claimed.blocked) return NextResponse.json({ ok: true });
   if (!(await incrementViewCount(post.id))) return NextResponse.json({ ok: true });
-  const user = await getFreshUser();
-  await recordRead(post.id, user?.id, post.wordCount);
   return NextResponse.json({ ok: true });
+}
+
+function rateLimited(retryAfterSec: number) {
+  return NextResponse.json({ error: "rate_limited" }, {
+    status: 429, headers: { "Retry-After": String(retryAfterSec) },
+  });
 }

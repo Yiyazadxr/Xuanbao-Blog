@@ -26,7 +26,11 @@ export async function approveComment(id: string): Promise<AdminActionState> {
     },
   });
   if (!comment) return { ok: false, error: "评论不存在" };
-  await prisma.comment.update({ where: { id: cid.data }, data: { isApproved: true } });
+  const approved = await prisma.comment.updateMany({
+    where: { id: cid.data, isApproved: false },
+    data: { isApproved: true },
+  });
+  if (approved.count === 0) return { ok: false, error: "评论已审核" };
   if (comment.authorId !== admin.id) {
     await createNotification(comment.authorId, {
       category: NOTIFICATION_CATEGORIES.SYSTEM,

@@ -4,6 +4,7 @@ import { ROLES } from "@/lib/roles";
 import {
   NOTIFICATION_CATEGORIES,
   type NotificationCategory,
+  type NotificationCursor,
   type NotificationItem,
   type NotificationUnreadSummary,
 } from "@/lib/notification-types";
@@ -181,12 +182,16 @@ function serialize(n: {
 export async function getUserNotifications(
   userId: string,
   category: NotificationCategory | "all",
-  cursor?: string,
+  cursor?: NotificationCursor,
   pageSize = 20
-): Promise<{ items: NotificationItem[]; nextCursor: string | null }> {
+): Promise<{ items: NotificationItem[]; nextCursor: NotificationCursor | null }> {
   const where = {
     userId,
     ...(category !== "all" ? { category } : {}),
+    ...(cursor ? { OR: [
+      { lastMergedAt: { lt: new Date(cursor.lastMergedAt) } },
+      { lastMergedAt: new Date(cursor.lastMergedAt), id: { lt: cursor.id } },
+    ] } : {}),
   };
   const rows = await prisma.notification.findMany({
     where,
@@ -204,14 +209,15 @@ export async function getUserNotifications(
       actorNames: true,
       count: true,
     },
-    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
   });
 
   const hasMore = rows.length > pageSize;
   const page = hasMore ? rows.slice(0, pageSize) : rows;
   return {
     items: page.map(serialize),
-    nextCursor: hasMore ? page[page.length - 1]?.id ?? null : null,
+    nextCursor: hasMore && page.length > 0
+      ? { id: page[page.length - 1].id, lastMergedAt: page[page.length - 1].lastMergedAt.toISOString() }
+      : null,
   };
 }
 

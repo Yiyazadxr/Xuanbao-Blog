@@ -231,7 +231,10 @@ export const notificationCategorySchema = z.enum(
 
 export const notificationsQuerySchema = z.object({
   category: z.union([z.literal("all"), notificationCategorySchema]),
-  cursor: z.string().trim().max(200, "游标过长").optional(),
+  cursor: z.object({
+    id: z.string().trim().min(1).max(100),
+    lastMergedAt: z.iso.datetime(),
+  }).strict().optional(),
 });
 
 // 仅返回统一文案，不暴露 Zod 错误结构。

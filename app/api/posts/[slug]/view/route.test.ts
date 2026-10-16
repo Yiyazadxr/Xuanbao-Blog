@@ -29,18 +29,41 @@ describe("浏览上报安全边界", () => {
     expect(mocks.increment).not.toHaveBeenCalled();
     expect(mocks.record).not.toHaveBeenCalled();
   });
-  it("超限在文章查询前返回 429", async () => {
+  it("超限不增加浏览量，但仍记录登录用户的阅读", async () => {
     mocks.isBlocked.mockResolvedValue({ blocked: true, retryAfterSec: 12 });
     const response = await POST(request({ postId: "post1" }), context);
     expect(response.status).toBe(429);
     expect(response.headers.get("retry-after")).toBe("12");
-    expect(mocks.findFirst).not.toHaveBeenCalled();
+    expect(mocks.record).toHaveBeenCalledWith("post1", "user1", 100);
+    expect(mocks.increment).not.toHaveBeenCalled();
     expect(mocks.checkAndHit).not.toHaveBeenCalled();
+  });
+  it("匿名超限在文章查询前返回", async () => {
+    mocks.user.mockResolvedValue(null);
+    mocks.isBlocked.mockResolvedValue({ blocked: true, retryAfterSec: 12 });
+    expect((await POST(request({ postId: "post1" }), context)).status).toBe(429);
+    expect(mocks.findFirst).not.toHaveBeenCalled();
+    expect(mocks.record).not.toHaveBeenCalled();
   });
   it("重复上报不再次增加浏览量", async () => {
     mocks.isBlocked.mockResolvedValueOnce({ blocked: false }).mockResolvedValueOnce({ blocked: true });
     expect((await POST(request({ postId: "post1" }), context)).status).toBe(200);
     expect(mocks.increment).not.toHaveBeenCalled();
+    expect(mocks.record).toHaveBeenCalledWith("post1", "user1", 100);
+  });
+  it("缺少可信 IP 时只记录登录用户阅读", async () => {
+    mocks.ip.mockResolvedValue("unknown");
+    expect((await POST(request({ postId: "post1" }), context)).status).toBe(200);
+    expect(mocks.record).toHaveBeenCalledWith("post1", "user1", 100);
+    expect(mocks.increment).not.toHaveBeenCalled();
+    expect(mocks.checkAndHit).not.toHaveBeenCalled();
+  });
+  it("缺少可信 IP 的匿名请求不查询文章", async () => {
+    mocks.ip.mockResolvedValue("unknown");
+    mocks.user.mockResolvedValue(null);
+    expect((await POST(request({ postId: "post1" }), context)).status).toBe(200);
+    expect(mocks.findFirst).not.toHaveBeenCalled();
+    expect(mocks.record).not.toHaveBeenCalled();
   });
   it("使用数据库字数，不信任客户端统计", async () => {
     await POST(request({ postId: "post1", wordCount: 999 }), context);

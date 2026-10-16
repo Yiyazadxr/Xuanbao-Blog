@@ -15,6 +15,7 @@ import {
   NOTIFICATION_CATEGORY_META,
   NOTIFICATION_CATEGORY_ORDER,
   type NotificationCategory,
+  type NotificationCursor,
   type NotificationItem,
   type NotificationUnreadSummary,
 } from "@/lib/notification-types";
@@ -34,7 +35,7 @@ export function NotificationCenter({
   initialUnread,
 }: {
   initialItems: NotificationItem[];
-  initialCursor: string | null;
+  initialCursor: NotificationCursor | null;
   initialUnread: NotificationUnreadSummary;
 }) {
   const [tab, setTab] = useState<Tab>("all");
@@ -44,7 +45,7 @@ export function NotificationCenter({
     like: [],
     comment: [],
   });
-  const [nextCursor, setNextCursor] = useState<Record<Tab, string | null>>({
+  const [nextCursor, setNextCursor] = useState<Record<Tab, NotificationCursor | null>>({
     all: initialCursor,
     system: null,
     like: null,
