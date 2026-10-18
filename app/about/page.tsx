@@ -32,6 +32,7 @@ export default async function AboutPage() {
           image={blogger?.image}
           name={blogger?.name}
           seed={blogger?.id}
+          eager
           className="size-[88px] text-6xl"
         />
         <div>

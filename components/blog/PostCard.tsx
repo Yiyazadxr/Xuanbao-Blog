@@ -7,13 +7,13 @@ export function PostCard({
   post,
   searchQuery,
   snippet,
-  priority = false,
+  preload = false,
 }: {
   post: PostListItem;
   searchQuery?: string;
   snippet?: string | null;
-  /** 首屏卡片置 true：封面图立即加载（LCP），非首屏保持懒加载 */
-  priority?: boolean;
+  /** 首屏卡片置 true：封面图在 <head> 预加载（Next 16 起 priority 已弃用，改用 preload） */
+  preload?: boolean;
 }) {
   const titleMatch = searchQuery ? findTitleMatch(post.title, searchQuery) : null;
   return (
@@ -26,7 +26,7 @@ export function PostCard({
               src={post.coverImage}
               alt={post.title}
               fill
-              priority={priority}
+              preload={preload}
               sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
               className="object-cover transition-[opacity,transform] duration-300 motion-reduce:duration-0 group-hover:scale-105"
             />

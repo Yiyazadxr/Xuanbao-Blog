@@ -78,7 +78,7 @@ export function PostListPaginated({
       <div className="cover-grid-3 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {current.map((post, i) => (
           // 首页前 3 张（首屏）立即加载封面，其余懒加载
-          <PostCard key={post.id} post={post} priority={page === 1 && i < 3} />
+          <PostCard key={post.id} post={post} preload={page === 1 && i < 3} />
         ))}
       </div>
       <Pagination page={page} totalPages={totalPages} basePath={basePath} />

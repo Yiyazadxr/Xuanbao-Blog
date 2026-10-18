@@ -35,7 +35,7 @@ export async function HomeSections() {
               {featured.map((post, i) => (
                 <StaggerItem key={post.id}>
                   {/* 首屏前两张封面立即加载（LCP 候选） */}
-                  <PostCard post={post} priority={i < 2} />
+                  <PostCard post={post} preload={i < 2} />
                 </StaggerItem>
               ))}
             </Stagger>

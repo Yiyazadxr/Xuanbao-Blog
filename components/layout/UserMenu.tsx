@@ -64,7 +64,7 @@ export function UserMenu() {
         aria-label="用户菜单"
         className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
-        <Avatar image={user.image} name={user.name} seed={user.id} className="size-8 text-sm" shape="circle" />
+        <Avatar image={user.image} name={user.name} seed={user.id} eager className="size-8 text-sm" shape="circle" />
       </button>
 
       {open && (

@@ -15,12 +15,15 @@ export function Avatar({
   className = "",
   seed,
   shape = "rounded",
+  eager = false,
 }: {
   image?: string | null;
   name?: string | null;
   className?: string;
   seed?: string;
   shape?: "rounded" | "circle";
+  /** 首屏头像（LCP 候选）置 true 立即加载，默认懒加载 */
+  eager?: boolean;
 }) {
   const initial = (name ?? "?").slice(0, 1);
   const color = getAvatarColor(seed || name || "");
@@ -35,6 +38,7 @@ export function Avatar({
           alt=""
           fill
           sizes="96px"
+          loading={eager ? "eager" : "lazy"}
           className="object-cover"
           referrerPolicy="no-referrer"
         />

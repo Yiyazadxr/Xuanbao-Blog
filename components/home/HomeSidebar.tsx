@@ -21,10 +21,12 @@ export function HomeSidebar({
     <aside className="flex flex-col gap-6 lg:sticky lg:top-[calc(var(--header-h)+1.5rem)] lg:w-72 lg:self-start">
       {/* 资料卡：移动端横排，lg 起居中纵排 */}
       <div className="flex items-center gap-4 rounded-2xl border border-border bg-surface p-5 lg:flex-col lg:p-6 lg:text-center">
+        {/* 首屏最大的一张图，作为 LCP 直接立即加载 */}
         <Avatar
           image={owner?.image}
           name={name}
           seed={owner?.name ?? name}
+          eager
           className="size-24 shrink-0 text-6xl lg:size-28 lg:text-7xl"
         />
         <div className="lg:contents">

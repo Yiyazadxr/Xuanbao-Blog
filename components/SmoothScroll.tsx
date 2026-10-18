@@ -25,6 +25,18 @@ export function SmoothScroll() {
       return;
 
     const lenis = new Lenis(LENIS_CONFIG);
+
+    // Lenis 只观察 documentElement，而它带 h-full（height: 100%），盒子高度恒等于视口，
+    // 内容长高（评论、懒加载图片、字体等）时不会触发重算，limit 会停留在挂载那一刻的旧值。
+    // 一旦真实滚动超过旧 limit，向下的滚轮会被 clamp 成同一个值然后 return，
+    // 表现为「事件被吃掉但页面不动」。这里改观察 body（高度随内容变化）并防抖重算。
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    const contentObserver = new ResizeObserver(() => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => lenis.resize(), 150);
+    });
+    contentObserver.observe(document.body);
+
     let rafId: number;
     const loop = (time: number) => {
       lenis.raf(time);
@@ -34,6 +46,8 @@ export function SmoothScroll() {
 
     return () => {
       cancelAnimationFrame(rafId);
+      contentObserver.disconnect();
+      clearTimeout(resizeTimer);
       lenis.destroy();
     };
   }, [enabled, reduceMotion]);

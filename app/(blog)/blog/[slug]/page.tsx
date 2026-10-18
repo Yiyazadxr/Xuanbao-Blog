@@ -131,7 +131,7 @@ export default async function BlogPostPage({
                 src={post.coverImage}
                 alt={post.title}
                 fill
-                priority
+                preload
                 sizes="(max-width: 896px) 100vw, 896px"
                 className="object-cover transition-opacity duration-500 motion-reduce:duration-0"
               />
