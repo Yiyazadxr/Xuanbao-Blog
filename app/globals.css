@@ -120,6 +120,23 @@ html.dark[data-monochrome-day] .festival-letter-dialog {
   --font-display: var(--font-space-grotesk), system-ui, "PingFang SC",
     "Microsoft YaHei", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "Cascadia Code", monospace;
+
+  /* 首页 CTA 扫光：hover 时一道斜向高光横穿按钮 */
+  --animate-cta-sheen: cta-sheen 0.9s var(--ease-custom) both;
+}
+
+@keyframes cta-sheen {
+  from {
+    transform: translateX(-160%) skewX(-18deg);
+    opacity: 0;
+  }
+  22% {
+    opacity: 1;
+  }
+  to {
+    transform: translateX(280%) skewX(-18deg);
+    opacity: 0;
+  }
 }
 
 /* 节日 Hero 场景：主题仅作用于局部，不覆盖站点底色和正文语义色。 */

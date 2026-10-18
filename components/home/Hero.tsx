@@ -7,6 +7,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useRef } from "react";
 import { PoemQuote } from "@/components/home/PoemQuote";
 import { FestivalFeature } from "@/components/home/FestivalFeature";
+import { StarfieldWarp } from "@/components/home/StarfieldWarp";
 import { getFestivalsForDay } from "@/lib/festivals";
 import { useFestivalDay } from "@/lib/use-festival-day";
 import { fadeUp, staggerContainer } from "@/lib/motion";
@@ -67,6 +68,8 @@ export function Hero() {
           ref={blobBRef}
           className="absolute right-[-12%] bottom-[-20%] size-[36vmax] rounded-full bg-[radial-gradient(circle,var(--glow-2),transparent_65%)] will-change-transform"
         />
+        {/* 星轨：景深粒子由远及近掠过，叠在光斑之上 */}
+        <StarfieldWarp />
       </div>
 
       {/* 内容区使用统一 Stagger 编排入场 */}
@@ -107,14 +110,20 @@ export function Hero() {
         >
           <Link
             href="/blog"
-            className="group inline-flex h-11 cursor-pointer items-center gap-2 rounded-full bg-foreground px-6 text-sm font-semibold text-background transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
+            className="group relative inline-flex h-11 cursor-pointer items-center gap-2 overflow-hidden rounded-full bg-foreground px-6 text-sm font-semibold text-background transition-[transform,box-shadow] duration-200 hover:scale-[1.03] hover:shadow-[0_0_28px_-8px_var(--accent)] active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
           >
-            开始阅读
+            {/* 扫光：hover 时一道斜向高光横穿按钮。取 --background 与按钮底色互为反色，
+                亮暗主题都看得见；系统开启减少动效时整条隐藏。 */}
+            <span
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 left-0 w-1/2 bg-[linear-gradient(90deg,transparent,color-mix(in_srgb,var(--background)_62%,transparent),transparent)] opacity-0 motion-reduce:hidden group-hover:animate-cta-sheen"
+            />
+            <span className="relative">开始阅读</span>
             <Icon
               icon="ph:arrow-right-bold"
               width={16}
               height={16}
-              className="transition-transform duration-200 group-hover:translate-x-0.5"
+              className="relative transition-transform duration-200 group-hover:translate-x-0.5"
             />
           </Link>
         </m.div>

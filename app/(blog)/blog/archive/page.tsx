@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ArchiveOrbit } from "@/components/blog/ArchiveOrbit";
 import { websiteOpenGraph } from "@/lib/metadata";
 import { getArchive } from "@/lib/posts";
 import { formatDate } from "@/lib/utils";
@@ -21,7 +22,12 @@ export default async function ArchivePage() {
     <>
       <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">归档</h1>
       <p className="mt-3 text-muted">按时间线浏览全部文章</p>
-      <div className="mt-12 space-y-14">
+      {/* 年份星图：节点大小随当年文章数变化，指针靠近放大 */}
+      <ArchiveOrbit
+        years={archive.map(({ year, posts }) => ({ year, count: posts.length }))}
+        className="mt-8"
+      />
+      <div className="mt-8 space-y-14">
         {archive.map(({ year, posts }) => (
           <section key={year}>
             <h2 className="font-display text-3xl font-bold tracking-tight text-accent">{year}</h2>

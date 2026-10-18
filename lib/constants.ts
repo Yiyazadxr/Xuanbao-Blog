@@ -300,7 +300,7 @@ export const TOOLS = [
   },
 ] as const;
 
-// 技能标签（about 页使用，按 基础 → 前端 → 桌面 → 移动 → 后端/运维 排序）
+// 技能标签（about 页使用，按 基础 → 前端/图形 → 桌面 → 移动 → 后端/运维 排序）
 export const SKILLS = [
   "HTML / CSS",
   "JavaScript",
@@ -308,16 +308,19 @@ export const SKILLS = [
   "React",
   "Next.js",
   "Tailwind CSS",
-  "shadcn/ui",
+  "Three.js",
+  "WebGL / GLSL",
   "Electron",
   "Kotlin",
   "Flutter",
   "Node.js",
+  "Prisma",
+  "PostgreSQL",
   "Python",
   "Docker",
 ] as const;
 
-// 时间线
+// 时间线：只记录本站（玄豹博客）自己的里程碑，不掺其它项目
 export const TIMELINE = [
   {
     time: "2025",
@@ -335,7 +338,7 @@ export const TIMELINE = [
     time: "2026.08",
     dateTime: "2026-08",
     title: "功能体系成型",
-    description: "四级权限、站内通知与邀请制注册落地，接入 Vercel 与 PostgreSQL",
+    description: "四级权限、站内通知与邀请制注册落地，接入 Vercel 与 PostgreSQL，项目在 GitHub 开源",
   },
   {
     time: "2026.09",
@@ -347,6 +350,7 @@ export const TIMELINE = [
     time: "2026.10",
     dateTime: "2026-10",
     title: "安全与性能加固",
-    description: "服务端分页、认证与写入一致性、浏览统计防刷与安全审计修复",
+    description:
+      "服务端全文搜索与分页、认证与写入一致性、浏览统计防刷与安全审计修复，并持续打磨阅读体验与动效",
   },
 ] as const;
