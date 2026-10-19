@@ -76,7 +76,7 @@ pnpm dev                    # start the dev server → http://localhost:3000
 - **Data**: Prisma 7 + PostgreSQL (Neon-compatible) + `@prisma/adapter-pg`
 - **Auth**: Auth.js v5 (Credentials email + password, JWT sessions)
 - **Markdown**: react-markdown + remark-gfm + rehype-highlight + rehype-slug; admin editor @uiw/react-md-editor
-- **Search**: server-side, paged keyword search over title, excerpt and full post text; requested on demand after the first keystroke, with search history kept locally
+- **Search**: server-side, paged keyword search over title, excerpt and full post text; requested on demand after the first keystroke, with search history kept locally; the public endpoint is rate-limited per IP
 - **Icons**: @iconify/react + Phosphor (pre-registered offline; only the icons in use are bundled)
 - **Other**: zod validation, hCaptcha, Vercel Blob image storage, Vercel Analytics / Speed Insights
 
@@ -98,7 +98,7 @@ pnpm dev                    # start the dev server → http://localhost:3000
 <details>
 <summary><b>Accounts</b></summary>
 
-- `/register`: submit an application or register with an invite code. Both paths send an email verification link first; set your password while verifying. Verified applications enter review, and after approval you can sign in with that password
+- `/register`: submit an application or register with an invite code. Both paths send an email verification link first; set your password while verifying. Verified applications enter review, and after approval you can sign in with that password. Verification emails are limited to five per email address per 24 hours
 - `/login`: sign in
 
 </details>

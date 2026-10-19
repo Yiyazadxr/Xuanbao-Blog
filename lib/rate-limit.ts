@@ -14,7 +14,7 @@ export type RateLimitVerdict = { blocked: boolean; retryAfterSec: number };
 // 删除过期行与窗口重置语义等价：行不存在或已过期的键都不再阻止请求。
 const CLEANUP_PROBABILITY = 0.02;
 const CLEANUP_MIN_INTERVAL_MS = 60 * 60 * 1000;
-// 最长限流窗口为 1 小时，过期后再留 1 小时，避免清理与窗口重置互相干扰。
+// 过期后再留 1 小时，避免清理与窗口重置互相干扰。
 const CLEANUP_GRACE_MS = 60 * 60 * 1000;
 let lastCleanupAt = 0;
 

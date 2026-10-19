@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import {
   createVerificationToken,
   VERIFICATION_TTL_MS,
@@ -9,8 +10,17 @@ import {
 } from "@/lib/mail";
 import { prisma } from "@/lib/prisma";
 import { generateInviteCode } from "@/lib/random";
+import { rateLimit } from "@/lib/rate-limit";
 
 const VERIFICATION_EXPIRES_HOURS = VERIFICATION_TTL_MS / (60 * 60 * 1000);
+const VERIFICATION_EMAIL_LIMIT = 5;
+
+// 重发会更新同一申请，不能用申请记录数限制邮件发送；哈希邮箱避免限流键存明文地址。
+async function canSendVerification(email: string): Promise<boolean> {
+  const key = createHash("sha256").update(email).digest("hex");
+  const check = await rateLimit.checkAndHit("verification-email", key, VERIFICATION_EMAIL_LIMIT, VERIFICATION_TTL_MS);
+  return !check.blocked;
+}
 
 function verificationExpiry(): Date {
   return new Date(Date.now() + VERIFICATION_TTL_MS);
@@ -74,6 +84,7 @@ export async function submitAccountRequest(email: string, message?: string) {
   if (pending && pending.status !== "UNVERIFIED") {
     return { ok: true };
   }
+  if (!(await canSendVerification(normalized))) return { ok: true };
 
   const { token, hash } = createVerificationToken();
   const expiresAt = verificationExpiry();
@@ -160,6 +171,7 @@ export async function submitInviteRequest({
   if (pending && pending.status !== "UNVERIFIED") {
     return { ok: true };
   }
+  if (!(await canSendVerification(normalized))) return { ok: true };
 
   const { token, hash } = createVerificationToken();
   const expiresAt = verificationExpiry();

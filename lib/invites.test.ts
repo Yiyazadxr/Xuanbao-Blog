@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { createHash } from "node:crypto";
 
 const mocks = vi.hoisted(() => ({
   count: vi.fn(),
@@ -10,6 +11,7 @@ const mocks = vi.hoisted(() => ({
   notify: vi.fn(),
   transaction: vi.fn(),
   sendMail: vi.fn(),
+  checkAndHit: vi.fn(),
 }));
 
 vi.mock("@/lib/prisma", () => ({
@@ -33,6 +35,7 @@ vi.mock("@/lib/mail", () => ({
   buildApprovalEmail: () => ({ subject: "已通过", text: "已激活" }),
 }));
 vi.mock("bcryptjs", () => ({ default: { hash: async () => "hash" } }));
+vi.mock("@/lib/rate-limit", () => ({ rateLimit: { checkAndHit: mocks.checkAndHit } }));
 
 import { submitAccountRequest, submitInviteRequest } from "./invites";
 
@@ -44,6 +47,7 @@ describe("申请入口防邮箱枚举", () => {
     mocks.pending.mockResolvedValue(null);
     mocks.invite.mockResolvedValue({ id: "i1", usedCount: 0, maxUses: 1 });
     mocks.sendMail.mockResolvedValue(true);
+    mocks.checkAndHit.mockResolvedValue({ blocked: false, retryAfterSec: 0 });
   });
 
   it.each(["registered", "pending", "limited", "new"])(
@@ -78,6 +82,37 @@ describe("申请入口防邮箱枚举", () => {
     });
     expect(mocks.sendMail).toHaveBeenCalledTimes(1);
     expect(mocks.notify).not.toHaveBeenCalled();
+    expect(mocks.checkAndHit).toHaveBeenCalledWith(
+      "verification-email",
+      createHash("sha256").update("test@example.com").digest("hex"),
+      5,
+      24 * 60 * 60 * 1000
+    );
+  });
+
+  it.each(["standard", "invite"])("未验证的 %s 申请超限后不轮换 token、不发邮件", async (kind) => {
+    mocks.pending.mockResolvedValue({ id: "r1", kind: kind === "standard" ? "STANDARD" : "INVITE", status: "UNVERIFIED" });
+    mocks.checkAndHit.mockResolvedValue({ blocked: true, retryAfterSec: 300 });
+    const result = kind === "standard"
+      ? await submitAccountRequest(" Test@Example.com ")
+      : await submitInviteRequest({ code: "valid", email: " Test@Example.com ", name: "Test" });
+    expect(result).toEqual({ ok: true });
+    expect(mocks.checkAndHit).toHaveBeenCalledWith(
+      "verification-email",
+      createHash("sha256").update("test@example.com").digest("hex"),
+      5,
+      24 * 60 * 60 * 1000
+    );
+    expect(mocks.update).not.toHaveBeenCalled();
+    expect(mocks.create).not.toHaveBeenCalled();
+    expect(mocks.sendMail).not.toHaveBeenCalled();
+  });
+
+  it("普通申请与邀请码申请共用按邮箱的验证邮件配额", async () => {
+    await submitAccountRequest("TEST@example.com");
+    await submitInviteRequest({ code: "valid", email: "test@example.com", name: "Test" });
+    expect(mocks.checkAndHit).toHaveBeenCalledTimes(2);
+    expect(mocks.checkAndHit.mock.calls[0]).toEqual(mocks.checkAndHit.mock.calls[1]);
   });
 
   it("无效邀请码在读取邮箱状态前拒绝", async () => {

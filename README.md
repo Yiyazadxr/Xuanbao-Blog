@@ -76,7 +76,7 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 - **数据**：Prisma 7 + PostgreSQL（兼容 Neon）+ `@prisma/adapter-pg`
 - **认证**：Auth.js v5（邮箱密码 Credentials + JWT Session）
 - **Markdown**：react-markdown + remark-gfm + rehype-highlight + rehype-slug；后台编辑器 @uiw/react-md-editor
-- **搜索**：服务端分页检索标题、摘要与完整正文纯文本；首次输入后按需请求，搜索历史保存在本地
+- **搜索**：服务端分页检索标题、摘要与完整正文纯文本；首次输入后按需请求，搜索历史保存在本地；公开接口按 IP 限流
 - **图标**：@iconify/react + Phosphor（离线预注册，仅打包用到的图标）
 - **其他**：zod 输入校验、hCaptcha 人机验证、Vercel Blob 图片存储、Vercel Analytics / Speed Insights
 
@@ -98,7 +98,7 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 <details>
 <summary><b>账号</b></summary>
 
-- `/register`：支持提交申请和邀请码注册。两种方式都会先发送邮箱验证链接，验证时设置密码；验证通过后进入审核，审核通过后用该密码登录
+- `/register`：支持提交申请和邀请码注册。两种方式都会先发送邮箱验证链接，验证时设置密码；验证通过后进入审核，审核通过后用该密码登录。同一邮箱的验证邮件每天最多发送 5 封
 - `/login`：登录
 
 </details>
