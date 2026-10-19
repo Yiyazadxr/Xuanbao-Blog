@@ -48,13 +48,13 @@ function countCjkAndWords(content: string): { cjk: number; words: number } {
   return { cjk, words };
 }
 
-// 纯文字字数：数中文字符 + 英文单词，供文章 wordCount 与页脚「合记 N 字」使用
+// 纯文字字数：统计中文字符与英文单词，供文章 wordCount 与页脚「合记 N 字」使用
 export function countWords(content: string): number {
   const { cjk, words } = countCjkAndWords(content);
   return cjk + words;
 }
 
-// 阅读时长按每分钟 400 字折算；列表和详情共用落库字数口径。
+// 阅读时长按每分钟 400 字折算；列表和详情共用落库字数。
 export function readingTimeFromWordCount(wordCount: number | null | undefined): number {
   if (!wordCount || wordCount <= 0) return 1;
   return Math.max(1, Math.round(wordCount / 400));
@@ -80,14 +80,14 @@ export function buildSearchText(markdown: string): string {
   return markdownToText(markdown);
 }
 
-// 从 Markdown 正文提取纯文本摘要（无手动摘要时兜底用）
+// 从 Markdown 正文提取纯文本摘要，作为无手动摘要时的回退。
 export function plainExcerpt(markdown: string, maxLength = 120): string {
   const text = markdownToText(markdown);
   return text.length > maxLength ? `${text.slice(0, maxLength)}…` : text;
 }
 
 // 从正文纯文本中截取命中关键词前后的片段；
-// 关键词未精确命中（如 Fuse 模糊匹配到标题）时返回 null，由调用方回退到摘要
+// 关键词未出现在正文时返回 null，由调用方回退到摘要
 export function searchSnippet(text: string, query: string, radius = 40): string | null {
   const q = query.trim();
   if (!q || !text) return null;

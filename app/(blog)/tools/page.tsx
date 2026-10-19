@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { TOOLS, TOOL_CATEGORIES } from "@/lib/constants";
 import { websiteOpenGraph } from "@/lib/metadata";
 
-const toolsDescription = "常用工具推荐，按设计、开发、安全、文件处理等分类整理";
+const toolsDescription = "常用工具，按设计、开发、安全、文件处理等分类整理。";
 
 export const metadata: Metadata = {
   title: "工具",
@@ -21,7 +21,7 @@ export default function ToolsPage() {
   return (
     <>
       <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">工具</h1>
-      <p className="mt-3 text-muted">我日常在用、也推荐给你的工具</p>
+      <p className="mt-3 text-muted">一些实用的网站以及小工具</p>
 
       {grouped.map((group) => (
         <section key={group.category} className="mt-12">

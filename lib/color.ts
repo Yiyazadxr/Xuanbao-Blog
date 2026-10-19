@@ -1,4 +1,4 @@
-// Canvas 取色：把主题色从 CSS 变量解析成 rgb，Canvas 吃不了 var()，亮暗切换时重读一次。
+// Canvas 取色：把主题色从 CSS 变量解析成 rgb。Canvas 无法直接使用 var()，亮暗切换时重新读取。
 // 全站 Canvas 特效共用这一份，避免各写一套。
 
 export type Rgb = [number, number, number];

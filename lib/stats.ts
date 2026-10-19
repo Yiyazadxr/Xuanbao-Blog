@@ -99,7 +99,7 @@ export async function getDashboardData(range: DashboardRange): Promise<Dashboard
       where: { date: { gte: windowStartKey, lte: endKey } },
       select: { date: true, views: true },
     }),
-    // 只取 createdAt 一列在服务端按天分桶：个人博客数据量级下比按天 count 轮询更省
+    // 只取 createdAt 一列在服务端按天分桶：个人博客的数据量下，比按天 count 查询更少
     prisma.comment.findMany({
       where: { isApproved: true, createdAt: { gte: windowStart, lt: rangeEnd } },
       select: { createdAt: true },

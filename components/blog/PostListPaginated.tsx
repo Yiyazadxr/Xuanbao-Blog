@@ -70,7 +70,7 @@ export function PostListPaginated({
   );
 
   if (current.length === 0) {
-    return <EmptyState size="lg" title="这里空空如也" description="没有匹配的文章，换个分类或标签试试" />;
+    return <EmptyState size="lg" title="没有匹配的文章" description="换个分类或标签看看。" />;
   }
 
   return (

@@ -136,7 +136,7 @@ export function SettingsPanel({
       ) : (
         <section className="mt-6 rounded-2xl border border-border bg-surface p-6">
           <h2 className="text-lg font-bold">显示</h2>
-          <p className="mt-1 text-sm text-muted">调整字体、间距、阅读体验与动效，立即生效</p>
+          <p className="mt-1 text-sm text-muted">调整字体、间距、行距与动效，改完即生效。</p>
           <div className="mt-5">
             <DisplayForm />
           </div>

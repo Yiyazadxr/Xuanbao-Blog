@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-// 全局错误边界（页面运行时错误兜底）：不向用户展示错误详情（避免泄露内部信息）
+// 页面运行时错误边界；不向用户展示错误详情，避免泄露内部信息。
 export default function GlobalError({
   error,
   unstable_retry,
@@ -19,8 +19,8 @@ export default function GlobalError({
   return (
     <div className="flex min-h-[70vh] flex-col items-center justify-center px-4 text-center">
       <p className="font-display text-6xl font-bold tracking-tight text-muted/40">500</p>
-      <h2 className="mt-4 text-xl font-bold tracking-tight">页面出错了</h2>
-      <p className="mt-2 text-sm text-muted">出了点小问题，请稍后重试</p>
+      <h2 className="mt-4 text-xl font-bold tracking-tight">页面遇到了一点小问题</h2>
+      <p className="mt-2 text-sm text-muted">请重试，或返回首页。</p>
       {error.digest && (
         <p className="mt-2 text-xs text-muted/70">错误编号：{error.digest}</p>
       )}

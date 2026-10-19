@@ -11,20 +11,41 @@ import { AdminActionButton } from "@/components/admin/AdminActionButton";
 import { successCls } from "@/components/ui/form-styles";
 
 // 申请审批按钮（客户端交互）
-export function RequestActions({ requestId }: { requestId: string }) {
+export function RequestActions({
+  requestId,
+  email,
+  approvable,
+}: {
+  requestId: string;
+  email: string;
+  approvable: boolean;
+}) {
   const [message, setMessage] = useState("");
 
   return (
     <div className="flex flex-col items-end gap-2">
+      {!approvable && (
+        <p className="max-w-64 text-right text-xs text-amber-600 dark:text-amber-400">
+          旧流程申请，邮箱未验证；请拒绝后让申请人重新提交。
+        </p>
+      )}
       <div className="flex items-center gap-1">
+        {approvable && (
+          <AdminActionButton
+            variant="accent"
+            action={() => approveRequest(requestId)}
+            onDone={(r) => setMessage(r.message ?? r.error ?? "")}
+            confirmText={`确定向 ${email} 发送账号激活通知吗？`}
+          >
+            通过并激活账号
+          </AdminActionButton>
+        )}
         <AdminActionButton
-          variant="accent"
-          action={() => approveRequest(requestId)}
+          variant="danger"
+          action={() => rejectRequest(requestId)}
           onDone={(r) => setMessage(r.message ?? r.error ?? "")}
+          confirmText="确定拒绝这个申请吗？"
         >
-          通过并发送账号
-        </AdminActionButton>
-        <AdminActionButton variant="danger" action={() => rejectRequest(requestId)}>
           拒绝
         </AdminActionButton>
       </div>

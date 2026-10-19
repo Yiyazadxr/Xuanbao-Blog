@@ -14,7 +14,7 @@ export type RateLimitVerdict = { blocked: boolean; retryAfterSec: number };
 // 删除过期行与窗口重置语义等价：行不存在或已过期的键都不再阻止请求。
 const CLEANUP_PROBABILITY = 0.02;
 const CLEANUP_MIN_INTERVAL_MS = 60 * 60 * 1000;
-// 最长限流窗口为 1 小时，过期后再留 1 小时冗余，避免清理与窗口重置相互追逐。
+// 最长限流窗口为 1 小时，过期后再留 1 小时，避免清理与窗口重置互相干扰。
 const CLEANUP_GRACE_MS = 60 * 60 * 1000;
 let lastCleanupAt = 0;
 
@@ -123,7 +123,7 @@ export const rateLimit = {
   },
 };
 
-// 入口必须清洗/追加 XFF；默认取最右侧地址，额外跳过数仅用于已知代理链。
+// 入口负责清洗并追加 XFF；默认取最右侧地址，跳过的地址数只用于已知代理链。
 export async function getClientIp(): Promise<string> {
   const h = await headers();
   const fwd = h.get("x-forwarded-for");

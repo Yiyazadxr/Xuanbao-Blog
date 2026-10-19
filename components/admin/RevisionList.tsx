@@ -28,7 +28,7 @@ export function RevisionList({ revisions }: { revisions: Revision[] }) {
   }
 
   if (revisions.length === 0) {
-    return <EmptyState size="lg" title="暂无历史版本" description="保存文章后会自动记录" />;
+    return <EmptyState size="lg" title="暂无历史版本" description="保存文章后会自动生成版本。" />;
   }
 
   return (

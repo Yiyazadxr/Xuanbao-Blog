@@ -21,7 +21,7 @@ function securePick(chars: string, length: number): string {
   return out;
 }
 
-// 生成 12 位随机初始密码（大小写字母 + 数字，无易混淆字符）
+// 生成 12 位随机密码（大小写字母 + 数字，无易混淆字符）
 export function generateRandomPassword(length = 12): string {
   return securePick(PASSWORD_CHARS, length);
 }

@@ -164,7 +164,7 @@ export function BlogPostsClient({
               )}
             </>
           ) : (
-            <EmptyState size="lg" title="没有找到相关文章" description="换个关键词试试" />
+            <EmptyState size="lg" title="没有找到相关文章" description="换个关键词看看。" />
           )
         ) : (
           <Suspense fallback={<PostGridSkeleton />}>

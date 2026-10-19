@@ -7,7 +7,7 @@ import { Avatar } from "@/components/ui/Avatar";
 import { ROLES } from "@/lib/roles";
 import { websiteOpenGraph } from "@/lib/metadata";
 
-const aboutDescription = `关于 ${SITE.shortName}——个人简介、技能栈与建站时间线`;
+const aboutDescription = `关于${SITE.shortName}：个人简介、技能栈与建站时间线`;
 
 export const metadata: Metadata = {
   title: "关于作者",
@@ -38,8 +38,7 @@ export default async function AboutPage() {
         <div>
           <h1 className="font-display text-4xl font-bold tracking-tight">你好，我是{SITE.shortName}</h1>
           <p className="mt-2 leading-relaxed text-muted">
-            一名正在学习全栈开发的爱好者。这个博客是我从零搭建的，从最初的纯手写
-            HTML，走到今天的 Next.js 全栈应用。我在这里记录技术、生活，和一切令我着迷的东西。
+            我在学全栈开发。这个博客最早是纯手写 HTML，后来重写成 Next.js 全栈应用。技术、生活，都放在这里。
           </p>
         </div>
       </div>
@@ -60,15 +59,15 @@ export default async function AboutPage() {
       <Timeline items={TIMELINE} />
 
       <p className="mt-16 rounded-2xl border border-border bg-surface p-6 text-sm leading-relaxed text-muted">
-        想和我交流？去{" "}
+        想聊两句，可以去{" "}
         <Link href="/social" className="text-accent hover:underline">
           社交页
-        </Link>{" "}
-        找到我，或{" "}
+        </Link>
+        ；也可以{" "}
         <Link href="/register" className="text-accent hover:underline">
           申请账号
-        </Link>{" "}
-        后在文章下留言。
+        </Link>
+        ，在文章下留言。
       </p>
     </div>
   );

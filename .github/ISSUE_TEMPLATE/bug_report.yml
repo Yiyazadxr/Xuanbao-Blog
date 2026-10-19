@@ -1,0 +1,80 @@
+name: Bug 报告 / Bug report
+description: 运行时错误、页面显示异常或性能问题；提交前请先搜索已有 Issue
+title: "[Bug] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        中文或英文都可以。Chinese or English, either is fine.
+
+        ⚠️ 请勿粘贴任何密钥或个人信息（密码、`.env` 内容、数据库连接串、Cookie、Token 等）。
+        Do not paste secrets or personal information.
+  - type: dropdown
+    id: environment
+    attributes:
+      label: 运行环境 / Environment
+      description: 问题出现在哪里
+      options:
+        - 线上站点（xuanbao.vercel.app）
+        - 本地开发（pnpm dev）
+        - 自托管部署
+        - 不确定 / Not sure
+    validations:
+      required: true
+  - type: input
+    id: page
+    attributes:
+      label: 页面路径 / Page path
+      description: 出问题页面的路径或地址
+      placeholder: 例：/blog/hello-world · /admin/posts
+    validations:
+      required: true
+  - type: dropdown
+    id: account
+    attributes:
+      label: 账号角色 / Account role
+      description: 当时的登录状态
+      options:
+        - 未登录（游客）
+        - 成员 MEMBER
+        - 管理员 ADMIN / SUPER_ADMIN
+        - 不适用 / Not applicable
+    validations:
+      required: false
+  - type: input
+    id: browser
+    attributes:
+      label: 浏览器与系统 / Browser and OS
+      placeholder: 例：Edge 141 · Windows 11
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 复现步骤 / Steps to reproduce
+      placeholder: |
+        1. 打开 /blog
+        2. 输入关键词
+        3. …
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 预期结果 / Expected
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: 实际结果 / Actual
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: 截图或控制台输出 / Screenshots or console output（可选）
+      description: 界面问题请附截图；控制台输出请先去掉密钥与个人信息
+    validations:
+      required: false

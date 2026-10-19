@@ -7,9 +7,9 @@ export default function NotFound() {
       <p className="font-display text-[clamp(5rem,18vw,10rem)] font-bold leading-none tracking-tight text-accent/25">
         404
       </p>
-      <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">这个页面走丢了</h1>
+      <h1 className="mt-4 text-2xl font-bold tracking-tight sm:text-3xl">该页面消失了</h1>
       <p className="mt-3 max-w-md text-sm leading-relaxed text-muted">
-        你要找的内容不存在或已被移动。可以回首页看看，或去文章列表逛逛。
+        地址可能错误，也可能是我把它挪走了。请重试，或返回首页。
       </p>
       <div className="mt-8 flex gap-4">
         <Link

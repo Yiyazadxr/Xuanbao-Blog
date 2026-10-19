@@ -7,7 +7,7 @@ import type { Variants, Transition } from "framer-motion";
 // 入场：快出缓收的 expo-out，用于滚动 reveal / 元素淡入
 export const EASE_OUT = [0.22, 1, 0.36, 1] as const;
 
-// 戏剧性：慢起猛收，用于遮罩揭开 / 幕布转场，对应 CSS --ease-custom
+// 强调转场：慢起猛收，用于遮罩揭开与幕布转场，对应 CSS --ease-custom。
 export const EASE_DRAMATIC = [0.79, 0, 0.06, 1] as const;
 
 // Spring 参数：磁吸 / 弹性缩放，导航按钮用

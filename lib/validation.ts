@@ -22,7 +22,7 @@ import {
 } from "@/lib/display";
 import { NOTIFICATION_CATEGORIES, type NotificationCategory } from "@/lib/notification-types";
 
-// 全局中文错误映射兜底未显式声明的 Zod 文案。
+// 为未显式声明的 Zod 错误提供中文文案。
 z.config({
   customError: (issue) => {
     switch (issue.code) {
@@ -71,13 +71,27 @@ export const registerSchema = z.object({
   code: z.string({ error: "邀请码不合法" }).trim().min(1, "请输入邀请码").max(100, "邀请码过长"),
   name: displayNameSchema,
   email: emailSchema,
-  password: z.string({ error: "密码不合法" }).min(8, "密码至少 8 位").max(72, "密码最长 72 位"),
 });
 
 export const applySchema = z.object({
   email: emailSchema,
-  message: z.string({ error: "申请说明不合法" }).trim().max(500, "申请说明最长 500 字").optional(),
+  message: z
+    .string({ error: "申请说明不合法" })
+    .trim()
+    .max(500, "申请说明最长 500 字")
+    .optional(),
 });
+
+// 验证邮箱时设置密码；申请阶段不接收密码。
+export const verifyPasswordSchema = z
+  .object({
+    password: z.string({ error: "密码不合法" }).min(8, "密码至少 8 位").max(72, "密码最长 72 位"),
+    confirmPassword: z.string({ error: "密码不合法" }).min(1, "请再次输入密码"),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: "两次密码不一致",
+    path: ["confirmPassword"],
+  });
 
 export const updateNameSchema = z.object({ name: displayNameSchema });
 

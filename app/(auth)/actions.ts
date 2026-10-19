@@ -56,11 +56,17 @@ export async function applyAction(
     return { ok: false, error: `申请过于频繁，请 ${check.retryAfterSec} 秒后再试` };
   }
 
-  await submitAccountRequest(parsed.data.email, parsed.data.message);
-  return { ok: true, message: "请求已受理；若邮箱符合申请条件，审核通过后会收到邮件。已注册用户可直接登录" };
+  const result = await submitAccountRequest(parsed.data.email, parsed.data.message);
+  return result.ok
+    ? {
+        ok: true,
+        message:
+          "请求已受理。若邮箱尚未验证，会收到验证邮件；打开链接验证邮箱并设置密码，验证后进入审核。已注册用户可直接登录",
+      }
+    : { ok: false, error: result.error ?? "提交失败，请稍后重试" };
 }
 
-// 邀请码申请按 IP 限流，并预建待审核账号。
+// 邀请码申请按 IP 限流；邮箱验证通过后才消耗邀请码并预建待审核账号。
 export async function registerAction(
   _prev: ActionState,
   formData: FormData
@@ -69,7 +75,6 @@ export async function registerAction(
     code: String(formData.get("code") ?? ""),
     name: String(formData.get("name") ?? ""),
     email: String(formData.get("email") ?? ""),
-    password: String(formData.get("password") ?? ""),
   });
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
 
@@ -86,6 +91,10 @@ export async function registerAction(
 
   const result = await submitInviteRequest(parsed.data);
   return result.ok
-    ? { ok: true, message: "请求已受理；若邮箱符合申请条件，审核通过后会收到邮件。已注册用户可直接登录" }
-    : { ok: false, error: result.error };
+    ? {
+        ok: true,
+        message:
+          "请求已受理。若邮箱尚未验证，会收到验证邮件；打开链接验证邮箱并设置密码，验证后进入审核。已注册用户可直接登录",
+      }
+    : { ok: false, error: result.error ?? "提交失败，请稍后重试" };
 }

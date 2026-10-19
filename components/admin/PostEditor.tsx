@@ -81,7 +81,7 @@ export function PostEditor({
   const [uploading, setUploading] = useState(false);
 
   // 恢复上次的草稿（仅在客户端挂载时执行一次；从 localStorage 同步外部状态）。
-  // 新建与编辑都恢复对应 key 的草稿；编辑时草稿优先级高于已落库内容（用户未保存的修改）。
+  // 新建与编辑都恢复对应 key 的草稿；编辑时草稿优先于已落库内容，保留未保存的修改。
   /* eslint-disable react-hooks/set-state-in-effect, react-hooks/exhaustive-deps */
   useEffect(() => {
     try {

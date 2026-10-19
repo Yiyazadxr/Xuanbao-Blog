@@ -39,11 +39,12 @@ export default async function AdminInvitesPage({
 
   const [requests, reqTotal, invites, invTotal] = await Promise.all([
     canReview ? prisma.accountRequest.findMany({
+      where: { status: { not: "UNVERIFIED" } },
       orderBy: { createdAt: "desc" },
       skip: (reqPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }) : [],
-    canReview ? prisma.accountRequest.count() : 0,
+    canReview ? prisma.accountRequest.count({ where: { status: { not: "UNVERIFIED" } } }) : 0,
     canManage ? prisma.inviteCode.findMany({
       orderBy: { createdAt: "desc" },
       skip: (invPage - 1) * PAGE_SIZE,
@@ -94,7 +95,11 @@ export default async function AdminInvitesPage({
                     </p>
                   </div>
                    {(req.status === "PENDING" || req.status === "PROCESSING") && (
-                     <RequestActions requestId={req.id} />
+                     <RequestActions
+                       requestId={req.id}
+                       email={req.email}
+                       approvable={Boolean(req.emailVerifiedAt)}
+                     />
                    )}
                 </li>
               );

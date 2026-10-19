@@ -3,8 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 
-// 后台行操作按钮统一封装：处理 pending、确认框、transition + router.refresh()，
-// 消除各处重复的 btnCls + useTransition + router.refresh 样板代码
+// 后台行操作按钮：处理 pending、确认框、transition 与 router.refresh()，避免重复样板代码。
 export type AdminActionResult = { ok: boolean; error?: string; message?: string };
 
 const baseCls =

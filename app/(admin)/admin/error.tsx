@@ -3,7 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 
-// 后台错误边界：不向用户展示错误详情（避免泄露内部信息）
+// 后台错误边界；不向用户展示错误详情，避免泄露内部信息。
 export default function AdminError({
   error,
   unstable_retry,
@@ -17,8 +17,8 @@ export default function AdminError({
 
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center">
-      <h2 className="text-xl font-bold tracking-tight">后台出错了</h2>
-      <p className="mt-2 text-sm text-muted">出了点小问题，请稍后重试</p>
+      <h2 className="text-xl font-bold tracking-tight">后台没有加载出来</h2>
+      <p className="mt-2 text-sm text-muted">可以重试，或返回后台首页。</p>
       {error.digest && (
         <p className="mt-2 text-xs text-muted/70">错误编号：{error.digest}</p>
       )}

@@ -65,8 +65,7 @@ export function FestivalFeature({ day }: { day: string }) {
                     type="button"
                     className="festival-letter-trigger mt-5 inline-flex min-h-11 items-center gap-2 rounded-full border border-current/30 px-4 py-2 text-sm font-medium text-foreground transition-colors hover:bg-foreground/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
                     onClick={(event) => {
-                      // 打开路径（鼠标与键盘）都经过 click，ref 在此统一记录触发器，
-                      // 避免 map 内多个按钮共享同一 ref 时 closeDialog 聚焦错对象。
+                      // 鼠标与键盘都经过 click；在这里记录触发按钮，避免多个按钮共用 ref 时 closeDialog 聚焦错对象。
                       triggerRef.current = event.currentTarget;
                       setOpenFestivalId(id);
                     }}

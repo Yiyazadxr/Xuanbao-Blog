@@ -91,7 +91,7 @@ export default async function BlogPostPage({
   }
 
   const toc = extractToc(post.content);
-  // 与列表页共用落库 wordCount 口径，避免每次渲染对全文重新计字。
+  // 与列表页共用落库的 wordCount，避免每次渲染重新统计全文。
   const readTime = readingTimeFromWordCount(post.wordCount);
   const [adjacent, seriesAdjacent, related, seriesChapters] = await Promise.all([
     getAdjacentPosts(post.id, post.createdAt),

@@ -207,20 +207,27 @@ model DailyViewStat {
   updatedAt DateTime @updatedAt
 }
 
-// 账号申请：status 取值 PENDING | PROCESSING | APPROVED | REJECTED
-// password 在审核交付期间暂存加密密文，失败重试复用同一凭据，通过后清空
+// 账号申请：status 取值 UNVERIFIED | PENDING | PROCESSING | APPROVED | REJECTED
+// 邮箱验证通过后才进入审核队列；password 为旧流程遗留密文，仅保留兼容历史数据，不再写入。
+// passwordHash 在验证邮箱时写入；普通申请在审核通过后清空，邀请码路径在预建待激活账号后清空。
 model AccountRequest {
-  id        String   @id @default(cuid())
-  email     String
-  message   String?
-  password  String?
-  kind      String   @default("STANDARD")
-  status    String   @default("PENDING")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String    @id @default(cuid())
+  email                 String
+  message               String?
+  password              String?
+  passwordHash          String?
+  kind                  String    @default("STANDARD")
+  status                String    @default("UNVERIFIED")
+  emailVerifiedAt       DateTime?
+  verificationTokenHash String?   @unique
+  verificationExpiresAt DateTime?
+  inviteCodeId          String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   @@index([status, createdAt])
   @@index([email, createdAt])
+  @@index([inviteCodeId])
 }
 
 // 邀请码：游客可凭码申请账号（仍走审核），格式 XR-XX-xxxxxxxxxxxx

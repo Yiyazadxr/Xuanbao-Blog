@@ -15,7 +15,7 @@ const RADIUS_X_MAX = 340;
 const RADIUS_Y_MAX = 118;
 /** 节点从正上方开始顺时针布点 */
 const START_ANGLE = -Math.PI / 2;
-/** 节点基础半径与按篇数增长系数（开方，避免大年份压垮小年份） */
+/** 节点基础半径与按篇数增长系数（开方，避免大年份挤压小年份） */
 const NODE_BASE = 2.6;
 const NODE_GROWTH = 1.5;
 /** 指针靠近时的放大倍率上限与影响半径 px */

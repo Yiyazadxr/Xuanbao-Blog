@@ -19,7 +19,7 @@ const rowVariants: Variants = {
   visible: { transition: { delayChildren: 0.04, staggerChildren: 0.07 } },
 };
 
-// 正文从轴线一侧滑入，比单纯的 fadeUp 更贴合时间线的纵向叙事
+// 正文从轴线一侧滑入，与时间线的纵向结构一致。
 const contentVariants: Variants = {
   hidden: { opacity: 0, x: -20, y: 8 },
   visible: { opacity: 1, x: 0, y: 0, transition: { duration: 0.7, ease: EASE_OUT } },

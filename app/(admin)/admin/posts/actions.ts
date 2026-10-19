@@ -26,7 +26,7 @@ export async function savePost(
   try {
     const postId = await writePost(p, admin.id);
 
-    // 旧封面可能被历史版本引用，仅在删除文章时统一清理。
+    // 旧封面可能被历史版本引用，只在删除文章时清理。
     revalidatePostContent();
     return { ok: true, message: p.id ? "已保存" : "已创建", id: postId };
   } catch (e) {

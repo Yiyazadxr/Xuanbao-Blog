@@ -1,4 +1,4 @@
-// 禁言相关类型（纯常量，客户端/服务端共用同一来源，禁止各写一份造成割裂）
+// 禁言相关类型，客户端与服务端共用。
 export type MuteInfo = {
   muted: boolean;
   permanent: boolean;

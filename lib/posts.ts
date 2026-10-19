@@ -281,7 +281,7 @@ export async function getAdjacentPosts(postId: string, createdAt: Date) {
 const RELATED_COUNT = 3;
 
 // 相关阅读：优先同分类、不足补同标签，按浏览量降序（热文优先）。
-// 两段查询而非 OR：保证同分类结果排在前，避免被同标签结果冲散。
+// 分两段查询而非 OR：同分类结果排在前，避免被同标签结果打乱顺序。
 export async function getRelatedPosts(post: {
   id: string;
   categoryId: string | null;
@@ -373,11 +373,10 @@ export async function getArchive() {
 }
 
 // 页脚统计：运行天数 + 总阅读量 + 公开文章数 + 正文总字数
-// 用 unstable_cache 包裹，5 分钟内重复请求直接返回缓存，避免全站每个页面都查库拖慢性能。
-// 注：Next 16 中 unstable_cache 已弃用，推荐迁移至 "use cache" 指令 + cacheTag/cacheLife；
-// 但 "use cache"/cacheTag 要求在 next.config.ts 启用 cacheComponents（全应用静态优先、
-// 动态 API 需显式 opt-in），属于影响所有路由缓存语义的大变更，超出本次优化爆炸半径，
-// 暂缓迁移，待单独评估 cacheComponents 全量影响后再做。
+// 用 unstable_cache 包裹，5 分钟内重复请求直接返回缓存，避免每个页面都查库。
+// 注：Next 16 中 unstable_cache 已弃用，推荐迁移至 "use cache" + cacheTag/cacheLife；
+// 但需要在 next.config.ts 启用 cacheComponents，并显式声明动态 API，
+// 会改变所有路由的缓存语义，暂未迁移。
 export const getSiteStats = unstable_cache(
   async () => {
     const aggregate = await prisma.post.aggregate({

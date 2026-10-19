@@ -16,7 +16,7 @@ const AREA_PER_PARTICLE = 5200;
 const FOV = 300;
 /** 出生景深，z 递减到 0 即到达镜头 */
 const Z_FAR = 1000;
-/** 贴近镜头后的淡出区间，避免粒子"撞屏"生硬消失 */
+/** 贴近镜头后的淡出区间，避免粒子突然消失 */
 const Z_NEAR_FADE = 100;
 /** 基础速度 z/秒，实际再乘 1~3 的随机倍率 */
 const SPEED_BASE = 66;

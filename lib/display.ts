@@ -1,4 +1,4 @@
-// 显示偏好（字体缩放 + 页面间距 + 界面密度 + 导航栏/页脚自定义）：默认存 localStorage，可开启跨设备同步
+// 显示偏好：字体缩放、页面间距、界面密度、导航栏与页脚自定义。默认存 localStorage，可开启跨设备同步。
 // 客户端可用；applyDisplay 与预水合脚本配合，避免 FOUC
 
 export const FONT_SCALE_MIN = 0.8;
@@ -23,7 +23,7 @@ export function isSpacingScale(value: unknown): value is number {
 export type Density = "compact" | "normal" | "comfortable" | "custom";
 export const DENSITY_DEFAULT: Density = "normal";
 
-// 是否为合法密度值（白名单校验，避免静默归一导致「保存成功实则未生效」）
+// 是否为合法密度值；非法值不静默归一。
 export function isDensity(value: unknown): value is Density {
   return value === "compact" || value === "normal" || value === "comfortable" || value === "custom";
 }

@@ -6,7 +6,7 @@ import { QQCard } from "@/components/ui/QQCard";
 import { FRIEND_LINKS, SOCIAL_LINKS } from "@/lib/constants";
 import { websiteOpenGraph } from "@/lib/metadata";
 
-const socialDescription = "社交链接与友情链接——GitHub 等平台的入口";
+const socialDescription = "社交账号、联系方式与友情链接。";
 
 export const metadata: Metadata = {
   title: "社交",

@@ -16,7 +16,7 @@ import {
 const initialState: ActionState = { ok: false };
 const HCAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY ?? "";
 
-// 注册页（邀请制）：两步 —— ①提交邮箱申请 ②凭邀请码申请（自设密码，审核通过后登录）
+// 注册页（邀请制）：提交申请后验证邮箱并设置密码，验证通过才进入审核。
 export default function RegisterPage() {
   const [tab, setTab] = useState<"apply" | "register">("apply");
   const [applyState, applyFormAction, applyPending] = useActionState(applyAction, initialState);
@@ -42,7 +42,7 @@ export default function RegisterPage() {
     <>
       <h1 className="font-display text-3xl font-bold tracking-tight">加入这里</h1>
       <p className="mt-2 text-sm text-muted">
-        本站采用邀请制。提交申请，审核通过后发放账号密码；持邀请码可直接注册。已有账号？{" "}
+        本站采用邀请制。提交申请并验证邮箱，验证时设置密码；审核通过后即可登录。持邀请码可直接注册。已有账号？{" "}
         <Link href="/login" className="text-accent hover:underline">
           直接登录
         </Link>
@@ -94,6 +94,7 @@ export default function RegisterPage() {
               placeholder="you@example.com"
               className={inputCls}
             />
+            <p className="mt-1.5 text-xs text-muted">提交后会收到验证邮件，验证时设置登录密码</p>
           </div>
           <div>
             <label htmlFor="apply-message" className={labelCls}>
@@ -165,25 +166,10 @@ export default function RegisterPage() {
               type="email"
               autoComplete="email"
               required
-              placeholder="申请时使用的邮箱"
+              placeholder="用于接收验证邮件"
               className={inputCls}
             />
-          </div>
-          <div>
-            <label htmlFor="reg-password" className={labelCls}>
-              密码
-            </label>
-            <input
-              id="reg-password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              placeholder="至少 8 位"
-              className={inputCls}
-            />
-            <p className="mt-1.5 text-xs text-muted">建议使用字母 + 数字组合，至少 8 位</p>
+            <p className="mt-1.5 text-xs text-muted">提交后会收到验证邮件，验证时设置登录密码</p>
           </div>
           {captchaRequired && <HCaptcha siteKey={HCAPTCHA_SITE_KEY} onVerify={setCaptchaToken} />}
           <ConsentCheckbox checked={consent} onCheckedChange={setConsent} />

@@ -266,7 +266,7 @@ export function DisplayForm() {
         smoothScroll: finalSmooth,
         readingProgress: finalProgress,
       });
-      setMsg("已开启跨设备同步，登录其他设备会自动同步");
+      setMsg("已开启跨设备同步，换设备登录后会拉取偏好");
     } finally {
       setSyncPending(false);
     }
@@ -499,7 +499,7 @@ export function DisplayForm() {
         <span className="min-w-0">
           <span className="block text-sm font-medium">跨设备同步</span>
           <span className="mt-0.5 block text-xs text-muted">
-            开启后偏好保存到账号，多端自动同步
+            开启后偏好保存到账号，换设备登录会自动同步
           </span>
         </span>
         <input

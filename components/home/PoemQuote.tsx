@@ -21,7 +21,7 @@ export function PoemQuote() {
   const [, sourceAuthor, sourceTitle] = /^(.*?)(《[^》]*》)$/.exec(poem.source) ?? [];
 
   // 首次挂载时选一句：需在客户端运行才能在 SSR 水合一致。
-  // 仅挂载后一次性随机，属「同步外部系统后的收尾」场景，故允许 effect 内 setState。
+  // 只在挂载后随机一次；这是对客户端随机状态的收尾，允许在 effect 内 setState。
   useEffect(() => {
     setIndex(Math.floor(Math.random() * POEMS.length)); // eslint-disable-line react-hooks/set-state-in-effect
   }, []);
@@ -70,8 +70,7 @@ export function PoemQuote() {
               {poem.text}
               <span className="ml-0.5">」</span>
             </span>
-            {/* 出处浮层：绝对定位、不占文档流，避免显示/隐藏导致布局回流把诗句挤离鼠标 */
-            /* 从而触发 mouseleave 造成闪烁 */}
+            {/* 出处浮层：绝对定位、不占文档流，避免显示/隐藏引起布局回流，把诗句挤离鼠标并触发 mouseleave。 */}
             <AnimatePresence>
               {showSource && (
                 <m.span

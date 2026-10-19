@@ -15,9 +15,9 @@ import {
   parseId,
   parseInput,
   postSchema,
-  registerSchema,
   roleSchema,
   updateNameSchema,
+  verifyPasswordSchema,
 } from "@/lib/validation";
 
 describe("emailSchema", () => {
@@ -78,13 +78,19 @@ describe("commentSchema", () => {
   });
 });
 
-describe("registerSchema", () => {
+describe("verifyPasswordSchema", () => {
   it("密码不足 8 位报错", () => {
-    const res = registerSchema.safeParse({
-      code: "X",
-      name: "n",
-      email: "a@b.com",
+    const res = verifyPasswordSchema.safeParse({
       password: "1234567",
+      confirmPassword: "1234567",
+    });
+    expect(res.success).toBe(false);
+  });
+
+  it("两次密码不一致报错", () => {
+    const res = verifyPasswordSchema.safeParse({
+      password: "password1",
+      confirmPassword: "password2",
     });
     expect(res.success).toBe(false);
   });

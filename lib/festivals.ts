@@ -139,7 +139,7 @@ export const FESTIVALS = {
 export type FestivalId = keyof typeof FESTIVALS;
 
 // 清明是节气，不是固定公历日；日期需按年度历法核验后维护。
-// 当前表覆盖首期实现与未来三年，扩展前应重新核对来源。
+// 当前表覆盖未来三年的节日日期，扩展前应重新核对来源。
 const QINGMING_DAYS: Readonly<Record<number, string>> = {
   2026: "2026-04-05",
   2027: "2027-04-05",

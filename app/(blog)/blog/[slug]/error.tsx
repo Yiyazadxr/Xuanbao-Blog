@@ -16,8 +16,8 @@ export default function BlogError({
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center">
       <p className="text-6xl font-bold tracking-tight text-muted/40">:(</p>
-      <h2 className="mt-4 text-xl font-bold tracking-tight">文章加载失败</h2>
-      <p className="mt-2 text-sm text-muted">请稍后再试</p>
+      <h2 className="mt-4 text-xl font-bold tracking-tight">文章没有加载出来</h2>
+      <p className="mt-2 text-sm text-muted">请重试，或返回首页。</p>
       {error.digest && (
         <p className="mt-2 text-xs text-muted/70">错误编号：{error.digest}</p>
       )}

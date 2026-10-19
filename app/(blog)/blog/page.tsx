@@ -5,7 +5,7 @@ import { websiteOpenGraph } from "@/lib/metadata";
 import { getCategoriesWithCount, getPosts } from "@/lib/posts";
 import { POSTS_PER_PAGE } from "@/lib/pagination";
 
-const blogDescription = "浏览全部文章，支持全文模糊搜索与分类筛选";
+const blogDescription = "浏览全部文章，支持关键词搜索与分类筛选。";
 
 export const metadata: Metadata = {
   title: "文章",

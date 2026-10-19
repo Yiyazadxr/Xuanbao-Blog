@@ -6,7 +6,7 @@ import { SocialLinks } from "@/components/home/SocialLinks";
 // 首页左侧信息栏：单一 DOM 响应式切换——
 // 移动端为顶部水平简介卡（头像居左），lg 起变为 sticky 纵向栏（资料卡 + 分类 + 标签）。
 // 资料卡内层用 lg:contents 打平：移动端「昵称签名 + 社交」裹在一列里跟在头像右侧，
-// lg 起社交链接提升为纵排卡片的直接子项，恢复居中三段式，无需两套 DOM。
+// lg 起社交链接作为纵排卡片的直接子项，保持居中三段式，无需两套 DOM。
 export function HomeSidebar({
   owner,
   categories,

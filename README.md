@@ -2,7 +2,9 @@
 
 # 暄宝xr 的博客
 
-一个开箱即用的中文个人博客系统：Markdown 写作、邀请制注册、评论点赞收藏、站内通知、后台管理与数据看板，几条命令即可完整跑起来。
+**简体中文** · [English](./README.en.md)
+
+一个中文个人博客系统：Markdown 写作、邀请制注册、评论点赞收藏、站内通知、后台管理与数据看板，几条命令即可跑起来。
 
 [![Stars](https://img.shields.io/github/stars/Yiyazadxr/Xuanbao-blog?style=flat-square)](https://github.com/Yiyazadxr/Xuanbao-blog/stargazers)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](./LICENSE)
@@ -12,7 +14,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com)
 
-[在线站点](https://xuanbao.vercel.app) · [提交 Issue](https://github.com/Yiyazadxr/Xuanbao-blog/issues) · [许可](#-许可)
+[在线站点](https://xuanbao.vercel.app) · [提交 Issue](https://github.com/Yiyazadxr/Xuanbao-blog/issues) · [贡献指南](./CONTRIBUTING.md) · [行为准则](./CODE_OF_CONDUCT.md) · [许可](#许可)
 
 </div>
 
@@ -21,13 +23,13 @@
 ## 功能特性
 
 - **内容写作** 📝 — Markdown 编辑器、版本历史与回滚、置顶 / 精选 / 归档、批量操作
-- **阅读体验** 📖 — 文章详情 ISR、目录导航与阅读进度、上下篇与系列导航、相关阅读、本地模糊搜索
+- **阅读体验** 📖 — 文章详情 ISR、目录导航与阅读进度、上下篇与系列导航、相关阅读、全文检索（服务端分页、按需请求）与搜索历史
 - **互动体系** 💬 — 评论与审核、回复通知、点赞、收藏、分享
 - **账号体系** 🔐 — Auth.js 邮箱密码登录、邀请码注册与申请审核、角色权限细分、禁言
 - **站内通知** 🔔 — 新评论与申请通知管理员，评论通过通知作者，回复通过通知被回复者
 - **后台看板** 📊 — 浏览量 / 评论 / 点赞 / 注册趋势、热门文章、分类分布，图表全部用 SVG 手绘，不依赖图表库
 - **SEO 与订阅** 🌐 — sitemap、robots、OG 图，以及全站与按分类 / 标签 / 系列的 RSS
-- **视觉与动效** 🎨 — 明暗主题、Lenis 平滑滚动、Canvas 水墨效果（远山 / 墨迹，无 3D 库）
+- **视觉与动效** 🎨 — 明暗主题、Lenis 平滑滚动、Canvas 特效（首页星空穿梭、水墨远山、归档星图；纯 2D 绘制，无 3D 库）
 
 ## 快速开始
 
@@ -70,11 +72,11 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 
 - **框架**：Next.js 16（App Router + Turbopack）+ React 19 + TypeScript
 - **样式**：Tailwind CSS v4 + @tailwindcss/typography。主题色定义在 `app/globals.css`，经 `@theme inline` 映射为 Tailwind 颜色
-- **动效**：framer-motion（LazyMotion + `m` 按需加载）+ Lenis 平滑滚动 + Canvas 水墨效果
+- **动效**：framer-motion（LazyMotion + `m` 按需加载）+ Lenis 平滑滚动 + Canvas 特效（星空 / 水墨 / 星图）
 - **数据**：Prisma 7 + PostgreSQL（兼容 Neon）+ `@prisma/adapter-pg`
 - **认证**：Auth.js v5（邮箱密码 Credentials + JWT Session）
 - **Markdown**：react-markdown + remark-gfm + rehype-highlight + rehype-slug；后台编辑器 @uiw/react-md-editor
-- **搜索**：服务端分页检索标题、摘要与完整正文纯文本；首次输入后按需请求
+- **搜索**：服务端分页检索标题、摘要与完整正文纯文本；首次输入后按需请求，搜索历史保存在本地
 - **图标**：@iconify/react + Phosphor（离线预注册，仅打包用到的图标）
 - **其他**：zod 输入校验、hCaptcha 人机验证、Vercel Blob 图片存储、Vercel Analytics / Speed Insights
 
@@ -84,7 +86,7 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 <summary><b>公开页面</b></summary>
 
 - `/` 首页：Hero、精选 / 最新文章、侧栏分类与标签
-- `/blog` 文章列表：本地模糊搜索（索引按需拉取）、分页、归档入口
+- `/blog` 文章列表：全文检索（按需请求）、搜索历史、分页、归档入口
 - `/blog/[slug]` 文章详情（ISR）：TOC、阅读进度、点赞 / 收藏 / 分享、上下篇与系列导航、评论区、相关阅读。浏览量和阅读记录由客户端上报
 - `/blog/category/[slug]`、`/blog/tag/[slug]`、`/blog/series/[slug]`、`/blog/archive` 分类 / 标签 / 系列 / 归档
 - `/bookmarks` 我的收藏、`/notifications` 站内通知中心、`/settings` 个人资料与显示偏好
@@ -96,7 +98,7 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 <details>
 <summary><b>账号</b></summary>
 
-- `/register`：支持提交申请和邀请码注册。申请审核通过后，登录凭据通过邮件发送
+- `/register`：支持提交申请和邀请码注册。两种方式都会先发送邮箱验证链接，验证时设置密码；验证通过后进入审核，审核通过后用该密码登录
 - `/login`：登录
 
 </details>
@@ -147,9 +149,10 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 | `DATABASE_URL` | PostgreSQL 连接串（Neon 建议用 pooled 连接串） |
 | `AUTH_SECRET` | Auth.js 密钥（`openssl rand -base64 32` 生成） |
 | `AUTH_TRUST_HOST` | 生产环境默认关闭；自托管需要信任 Host 头时设为 `true` |
-| `NEXT_PUBLIC_SITE_URL` | 正式域名，用于 sitemap / RSS / 元数据 |
+| `TRUSTED_PROXY_HOPS` | `X-Forwarded-For` 右侧需要跳过的代理地址数（限流取客户端 IP 用）；平台覆写为单个客户端地址时设 `0` |
+| `NEXT_PUBLIC_SITE_URL` | 正式域名，用于 sitemap / RSS / 元数据与验证邮件链接 |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | 种子脚本创建超级管理员 |
-| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | QQ 邮箱 SMTP，用于发放登录凭据的审核邮件（未配置则不发送） |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | QQ 邮箱 SMTP，用于邮箱验证与审核通知（未配置则无法提交申请） |
 | `NEXT_PUBLIC_HCAPTCHA_SITE_KEY` / `HCAPTCHA_SECRET_KEY` | hCaptcha 人机验证（未配置则跳过验证） |
 | `BLOB_READ_WRITE_TOKEN` | Vercel Blob 图片存储；生产环境上传封面或头像时必须配置 |
 
@@ -176,9 +179,17 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 3. 配置 `AUTH_SECRET`，并将 `NEXT_PUBLIC_SITE_URL` 设为正式域名。
 4. 运行种子脚本前配置 `ADMIN_EMAIL` 和 `ADMIN_PASSWORD`。
 5. 生产环境需要上传封面或头像时，创建 Blob Store。Vercel 会注入 `BLOB_READ_WRITE_TOKEN`。
-6. 需要发送审核邮件时配置 SMTP。需要启用人机验证时同时配置 hCaptcha 的 Site Key 和 Secret Key；未配置时会跳过验证。
+6. 提交申请前配置 SMTP，用于邮箱验证与审核通知。需要启用人机验证时同时配置 hCaptcha 的 Site Key 和 Secret Key；未配置时会跳过验证。
 
 **自托管**：构建后 `pnpm start` 即可，记得设置 `AUTH_TRUST_HOST=true`。
+
+## 参与贡献
+
+欢迎通过 [Issue 表单](https://github.com/Yiyazadxr/Xuanbao-blog/issues/new/choose) 反馈问题或建议，也可以直接提交 Pull Request。
+
+- 本地运行、改动约束与提交前检查：[CONTRIBUTING.md](./CONTRIBUTING.md)
+- 社区规范与举报方式：[CODE_OF_CONDUCT.md](./CODE_OF_CONDUCT.md)
+- 提交内容请不要包含密钥与个人信息（密码、`.env`、数据库连接串、Cookie 等）
 
 ## 许可
 

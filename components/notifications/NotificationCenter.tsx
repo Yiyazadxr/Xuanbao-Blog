@@ -232,7 +232,7 @@ export function NotificationCenter({
       <div className="flex items-end justify-between gap-4">
         <div>
           <h1 className="font-display text-3xl font-bold tracking-tight sm:text-4xl">通知</h1>
-          <p className="mt-2 text-sm text-muted">你的赞、评论回复与系统消息都在这里</p>
+          <p className="mt-2 text-sm text-muted">收到的赞、评论回复与系统消息都在这里</p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
           <button
@@ -296,6 +296,7 @@ export function NotificationCenter({
           <EmptyState
             icon={tab === "all" ? "ph:bell-light" : NOTIFICATION_CATEGORY_META[tab as NotificationCategory].icon}
             title="暂无通知"
+            description="有新消息时会出现在这里。"
             className="py-20"
           />
         ) : (

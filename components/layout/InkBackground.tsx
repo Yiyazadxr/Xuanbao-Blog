@@ -102,7 +102,7 @@ export function InkBackground() {
     let hasLast = false;
     let resizeTimer: number | undefined;
 
-    // 开场墨，否则页面刚打开是空白，移动端无鼠标时更看不到特效
+    // 开场先落一笔墨；否则页面初始为空白，移动端没有鼠标更看不到效果。
     function seedInk() {
       const f = fluid;
       if (!f) return;
@@ -236,7 +236,7 @@ export function InkBackground() {
       rafId = requestAnimationFrame(frame);
     }
 
-    // 不 clear，stop 只在墨迹淡到看不见时触发，否则会突然抹掉可见的墨
+    // 不 clear；stop 只在墨迹淡到不可见时触发，避免抹掉仍可见的墨迹。
     function stop() {
       running = false;
       cancelAnimationFrame(rafId);

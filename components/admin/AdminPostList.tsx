@@ -36,7 +36,7 @@ export function AdminPostList({
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   if (posts.length === 0) {
-    return <EmptyState title="还没有文章，点右上角「写文章」开始。" />;
+    return <EmptyState title="还没有文章" description="点右上角「写文章」开始。" />;
   }
 
   const allSelected = posts.every((p) => selected.has(p.id));

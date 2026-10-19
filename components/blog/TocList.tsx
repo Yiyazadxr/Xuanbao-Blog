@@ -1,7 +1,7 @@
 import type { TocItem } from "@/lib/markdown";
 
 // 目录列表：桌面 Sidebar 与移动端抽屉共用同一份渲染。
-// variant 只保留两处原有视觉差异——桌面带左侧轨道线、行高紧凑；抽屉行高加大适配触控。
+// variant 只区分两处视觉差异：桌面带左侧轨道线、行高紧凑；抽屉行高加大，适配触控。
 export function TocList({
   toc,
   activeId,

@@ -2,8 +2,8 @@
 
 import { useEffect } from "react";
 
-// 根布局错误兜底（error.tsx 无法捕获根 layout 的错误）：
-// global-error 必须自带 html/body 标签，且不能导出 metadata
+// 根布局错误边界：error.tsx 捕获不到根 layout 的错误。
+// global-error 必须自带 html/body，且不能导出 metadata。
 export default function RootGlobalError({
   error,
   unstable_retry,
@@ -34,10 +34,10 @@ export default function RootGlobalError({
             500
           </p>
           <h2 style={{ margin: "1rem 0 0.5rem", fontSize: "1.25rem", fontWeight: 700 }}>
-            页面出错了
+            页面遇到了一点小问题
           </h2>
           <p style={{ margin: 0, fontSize: "0.875rem", color: "#78716c" }}>
-            出了点小问题，请稍后重试
+            请重试，或返回首页。
           </p>
           {error.digest && (
             <p style={{ margin: "0.5rem 0 0", fontSize: "0.75rem", color: "#a1a1aa" }}>

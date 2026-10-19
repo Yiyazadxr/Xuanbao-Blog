@@ -24,7 +24,7 @@ export async function getMuteInfo(userId: string): Promise<MuteInfo> {
   };
 }
 
-// 快捷判断：用户当前是否处于禁言状态
+// 判断用户当前是否处于禁言状态。
 export async function isMuted(userId: string): Promise<boolean> {
   return (await getMuteInfo(userId)).muted;
 }
