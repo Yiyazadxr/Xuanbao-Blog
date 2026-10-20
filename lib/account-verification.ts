@@ -4,6 +4,7 @@ import { notifyAdmins } from "@/lib/notifications";
 import { NOTIFICATION_CATEGORIES } from "@/lib/notification-types";
 import { prisma } from "@/lib/prisma";
 import { ROLES } from "@/lib/roles";
+import { VERIFICATION_FAILURE, type VerificationResult } from "@/lib/verification-result";
 
 // 验证链接 24 小时有效；过期后需要重新提交申请。
 export const VERIFICATION_TTL_MS = 24 * 60 * 60 * 1000;
@@ -41,19 +42,19 @@ export async function getVerificationTarget(
 export async function verifyAccountRequest(
   token: string,
   password: string
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<VerificationResult> {
   if (!token || token.length > 200) {
-    return { ok: false, error: "链接无效或已过期" };
+    return { ok: false, reason: VERIFICATION_FAILURE.INVALID_LINK, error: "链接无效或已过期" };
   }
-  if (password.length < 8) return { ok: false, error: "密码至少 8 位" };
-  if (password.length > 72) return { ok: false, error: "密码最长 72 位" };
+  if (password.length < 8) return { ok: false, reason: VERIFICATION_FAILURE.PASSWORD, error: "密码至少 8 位" };
+  if (password.length > 72) return { ok: false, reason: VERIFICATION_FAILURE.PASSWORD, error: "密码最长 72 位" };
 
   const tokenHash = hashToken(token);
   const request = await prisma.accountRequest.findUnique({
     where: { verificationTokenHash: tokenHash },
   });
   if (!request || request.status !== "UNVERIFIED") {
-    return { ok: false, error: "链接无效或已过期" };
+    return { ok: false, reason: VERIFICATION_FAILURE.INVALID_LINK, error: "链接无效或已过期" };
   }
   if (
     !request.verificationExpiresAt ||
@@ -63,7 +64,7 @@ export async function verifyAccountRequest(
       where: { id: request.id, status: "UNVERIFIED" },
       data: { verificationTokenHash: null, verificationExpiresAt: null },
     });
-    return { ok: false, error: "链接已过期，请重新提交申请" };
+    return { ok: false, reason: VERIFICATION_FAILURE.EXPIRED, error: "链接已过期，请重新提交申请" };
   }
 
   let passwordHash: string;
@@ -71,7 +72,7 @@ export async function verifyAccountRequest(
     passwordHash = await bcrypt.hash(password, 10);
   } catch (error) {
     console.error("设置登录密码失败：", error);
-    return { ok: false, error: "验证失败，请稍后重试" };
+    return { ok: false, reason: VERIFICATION_FAILURE.RETRY, error: "验证失败，请稍后重试" };
   }
 
   const now = new Date();
@@ -161,7 +162,7 @@ export async function verifyAccountRequest(
             passwordHash: null,
           },
         });
-        return { ok: false, error: "邀请码无效或已失效，请重新申请" };
+        return { ok: false, reason: VERIFICATION_FAILURE.INVITE_INVALID, error: "邀请码无效或已失效，请重新申请" };
       }
       if (
         error.message === "EMAIL_ALREADY_EXISTS" ||
@@ -176,14 +177,14 @@ export async function verifyAccountRequest(
             passwordHash: null,
           },
         });
-        return { ok: false, error: "该邮箱已有可用账号，请直接登录" };
+        return { ok: false, reason: VERIFICATION_FAILURE.ACCOUNT_EXISTS, error: "该邮箱已有可用账号，请直接登录" };
       }
       if (error.message === "VERIFICATION_TAKEN") {
-        return { ok: false, error: "链接已使用，请勿重复验证" };
+        return { ok: false, reason: VERIFICATION_FAILURE.USED, error: "链接已使用，请勿重复验证" };
       }
     }
     console.error("邮箱验证失败：", error);
-    return { ok: false, error: "验证失败，请稍后重试" };
+    return { ok: false, reason: VERIFICATION_FAILURE.RETRY, error: "验证失败，请稍后重试" };
   }
 
   try {

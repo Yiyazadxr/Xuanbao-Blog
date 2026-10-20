@@ -143,6 +143,7 @@ describe("邮箱验证", () => {
     mocks.findRequest.mockResolvedValue(null);
     await expect(verifyAccountRequest("token", "password123")).resolves.toEqual({
       ok: false,
+      reason: "invalid-link",
       error: "链接无效或已过期",
     });
     expect(mocks.transaction).not.toHaveBeenCalled();
@@ -152,6 +153,7 @@ describe("邮箱验证", () => {
     mocks.findRequest.mockResolvedValue(request({ verificationExpiresAt: past }));
     await expect(verifyAccountRequest("token", "password123")).resolves.toEqual({
       ok: false,
+      reason: "expired",
       error: "链接已过期，请重新提交申请",
     });
     expect(mocks.updateMany).toHaveBeenCalledWith(
@@ -167,5 +169,71 @@ describe("邮箱验证", () => {
     await expect(getVerificationTarget("token")).resolves.toEqual({
       email: "test@example.com",
     });
+  });
+
+  it("令牌被抢占时拒绝重复验证且不建号", async () => {
+    mocks.findRequest.mockResolvedValue(request());
+    mocks.updateMany.mockResolvedValue({ count: 0 });
+    await expect(verifyAccountRequest("token", "password123")).resolves.toEqual({
+      ok: false,
+      reason: "used",
+      error: "链接已使用，请勿重复验证",
+    });
+    expect(mocks.createUser).not.toHaveBeenCalled();
+  });
+
+  it("邮箱已有可用账号时把申请置为已拒绝", async () => {
+    mocks.findRequest.mockResolvedValue(request());
+    mocks.findUser.mockResolvedValue({ id: "u1", role: "MEMBER", disabled: false });
+    await expect(verifyAccountRequest("token", "password123")).resolves.toEqual({
+      ok: false,
+      reason: "account-exists",
+      error: "该邮箱已有可用账号，请直接登录",
+    });
+    expect(mocks.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "REJECTED", verificationTokenHash: null }),
+      })
+    );
+    expect(mocks.createUser).not.toHaveBeenCalled();
+  });
+
+  it("邀请码已用尽时拒绝并回滚申请", async () => {
+    mocks.findRequest.mockResolvedValue(
+      request({ kind: "INVITE", inviteCodeId: "i1" })
+    );
+    mocks.findInvite.mockResolvedValue({
+      id: "i1",
+      usedCount: 1,
+      maxUses: 1,
+      expiresAt: future,
+    });
+    await expect(verifyAccountRequest("token", "password123")).resolves.toEqual({
+      ok: false,
+      reason: "invite-invalid",
+      error: "邀请码无效或已失效，请重新申请",
+    });
+    expect(mocks.updateMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ status: "REJECTED" }),
+      })
+    );
+    expect(mocks.useInvite).not.toHaveBeenCalled();
+    expect(mocks.createUser).not.toHaveBeenCalled();
+  });
+
+  it("事务故障只返回可重试代码，不暴露异常", async () => {
+    mocks.findRequest.mockResolvedValue(request());
+    mocks.transaction.mockRejectedValue(new Error("database secret"));
+    const log = vi.spyOn(console, "error").mockImplementation(() => {});
+    try {
+      await expect(verifyAccountRequest("token", "password123")).resolves.toEqual({
+        ok: false,
+        reason: "retry",
+        error: "验证失败，请稍后重试",
+      });
+    } finally {
+      log.mockRestore();
+    }
   });
 });

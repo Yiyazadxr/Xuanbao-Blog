@@ -27,9 +27,10 @@ export async function cleanupExpiredRateLimits(): Promise<void> {
 
 // 写入路径按概率触发清理；进程内节流，多实例各自独立触发。
 function maybeCleanupExpired(): void {
+  // 概率决定「是否尝试」，时间窗决定「尝试频率」；顺序颠倒会让清理实际间隔长达数十小时。
+  if (Math.random() >= CLEANUP_PROBABILITY) return;
   const now = Date.now();
   if (now - lastCleanupAt < CLEANUP_MIN_INTERVAL_MS) return;
-  if (Math.random() >= CLEANUP_PROBABILITY) return;
   lastCleanupAt = now;
   runAfter(async () => {
     try {

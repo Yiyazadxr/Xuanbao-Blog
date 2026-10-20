@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-  findUnique: vi.fn(), update: vi.fn(), checkAndHit: vi.fn(), reset: vi.fn(), compare: vi.fn(),
+  findUnique: vi.fn(), update: vi.fn(), checkAndHit: vi.fn(), reset: vi.fn(), isBlocked: vi.fn(), compare: vi.fn(),
   authorize: undefined as undefined | ((credentials: unknown) => Promise<unknown>),
   jwt: undefined as undefined | ((args: { token: Record<string, unknown>; user?: Record<string, unknown>; trigger?: string; session?: Record<string, unknown> }) => Promise<unknown>),
 }));
@@ -20,28 +20,48 @@ describe("认证入口限流", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mocks.checkAndHit.mockResolvedValue({ blocked: false });
+    mocks.isBlocked.mockResolvedValue({ blocked: false });
   });
 
-  it("直接认证请求超过 IP 限额时不查询用户或计算密码", async () => {
+  it("IP 限额已满时不查询用户或计算密码", async () => {
     await import("@/lib/auth");
-    mocks.checkAndHit.mockResolvedValueOnce({ blocked: true });
+    mocks.isBlocked.mockResolvedValueOnce({ blocked: true });
     expect(await mocks.authorize!({ email: "test@example.com", password: "password123" })).toBeNull();
     expect(mocks.findUnique).not.toHaveBeenCalled();
     expect(mocks.compare).not.toHaveBeenCalled();
+    expect(mocks.checkAndHit).not.toHaveBeenCalled();
   });
 
-  it("邮箱限额独立生效", async () => {
+  it("邮箱限额已满时不查询用户", async () => {
     await import("@/lib/auth");
-    mocks.checkAndHit.mockResolvedValueOnce({ blocked: false }).mockResolvedValueOnce({ blocked: true });
+    mocks.isBlocked.mockResolvedValueOnce({ blocked: false }).mockResolvedValueOnce({ blocked: true });
     expect(await mocks.authorize!({ email: "test@example.com", password: "password123" })).toBeNull();
-    expect(mocks.checkAndHit).toHaveBeenCalledTimes(2);
     expect(mocks.findUnique).not.toHaveBeenCalled();
   });
 
   it("无效输入不触发数据库请求", async () => {
     await import("@/lib/auth");
     expect(await mocks.authorize!({ email: "invalid", password: "" })).toBeNull();
+    expect(mocks.isBlocked).not.toHaveBeenCalled();
     expect(mocks.checkAndHit).not.toHaveBeenCalled();
+  });
+
+  it("密码错误才计数", async () => {
+    await import("@/lib/auth");
+    mocks.findUnique.mockResolvedValue({ id: "u1", password: "hash", activatedAt: new Date(), lastLoginAt: null, disabled: false });
+    mocks.compare.mockResolvedValue(false);
+    expect(await mocks.authorize!({ email: "test@example.com", password: "wrong123" })).toBeNull();
+    expect(mocks.checkAndHit).toHaveBeenCalledTimes(2);
+    expect(mocks.reset).not.toHaveBeenCalled();
+  });
+
+  it("登录成功不计入失败配额并清空邮箱计数", async () => {
+    await import("@/lib/auth");
+    mocks.findUnique.mockResolvedValue({ id: "u1", name: "u", email: "test@example.com", image: null, role: "MEMBER", sessionVersion: 0, password: "hash", activatedAt: new Date(), lastLoginAt: new Date(), disabled: false });
+    mocks.compare.mockResolvedValue(true);
+    expect(await mocks.authorize!({ email: "test@example.com", password: "right123" })).not.toBeNull();
+    expect(mocks.checkAndHit).not.toHaveBeenCalled();
+    expect(mocks.reset).toHaveBeenCalledWith("login-email", "test@example.com");
   });
 
   it("错误密码不能停用超过首次登录宽限期的账号", async () => {

@@ -45,12 +45,18 @@ export async function applyAction(
   });
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
 
+  // 人机校验前先限流：否则每次请求都会先打一次 hCaptcha 出站请求，站点会被当作校验放大器。
+  const ip = await getClientIp();
+  const captchaCheck = await rateLimit.checkAndHit("captcha", ip, 30, 10 * 60 * 1000);
+  if (captchaCheck.blocked) {
+    return { ok: false, error: `操作过于频繁，请 ${captchaCheck.retryAfterSec} 秒后再试` };
+  }
+
   // 未配置 hCaptcha 密钥时跳过验证。
   if (!(await verifyHCaptcha(String(formData.get("captcha") ?? "")))) {
     return { ok: false, error: "人机验证未通过，请重新验证" };
   }
 
-  const ip = await getClientIp();
   const check = await rateLimit.checkAndHit("apply", ip, 5, 10 * 60 * 1000);
   if (check.blocked) {
     return { ok: false, error: `申请过于频繁，请 ${check.retryAfterSec} 秒后再试` };
@@ -78,12 +84,18 @@ export async function registerAction(
   });
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
 
+  // 人机校验前先限流：否则每次请求都会先打一次 hCaptcha 出站请求，站点会被当作校验放大器。
+  const ip = await getClientIp();
+  const captchaCheck = await rateLimit.checkAndHit("captcha", ip, 30, 10 * 60 * 1000);
+  if (captchaCheck.blocked) {
+    return { ok: false, error: `操作过于频繁，请 ${captchaCheck.retryAfterSec} 秒后再试` };
+  }
+
   // 未配置 hCaptcha 密钥时跳过验证。
   if (!(await verifyHCaptcha(String(formData.get("captcha") ?? "")))) {
     return { ok: false, error: "人机验证未通过，请重新验证" };
   }
 
-  const ip = await getClientIp();
   const check = await rateLimit.checkAndHit("register", ip, 10, 60 * 60 * 1000);
   if (check.blocked) {
     return { ok: false, error: `注册太频繁，请 ${check.retryAfterSec} 秒后再试` };

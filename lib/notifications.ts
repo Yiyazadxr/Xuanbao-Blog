@@ -50,20 +50,17 @@ async function cleanupForUser(userId: string) {
   await prisma.notification.deleteMany({
     where: { userId, createdAt: { lt: cutoff } },
   });
-  const count = await prisma.notification.count({ where: { userId } });
-  if (count > MAX_NOTIFICATIONS) {
-    const oldest = await prisma.notification.findMany({
-      where: { userId },
-      orderBy: [{ lastMergedAt: "desc" }, { id: "desc" }],
-      skip: MAX_NOTIFICATIONS,
-      select: { id: true },
-    });
-    if (oldest.length > 0) {
-      await prisma.notification.deleteMany({
-        where: { id: { in: oldest.map((n) => n.id) } },
-      });
-    }
-  }
+  // 超出上限时按最旧顺序删除；用子查询直接删除，避免把全部 id 读进内存拼成超长 IN 列表。
+  await prisma.$executeRaw`
+    DELETE FROM "Notification"
+    WHERE "userId" = ${userId}
+      AND "id" IN (
+        SELECT "id" FROM "Notification"
+        WHERE "userId" = ${userId}
+        ORDER BY "lastMergedAt" DESC, "id" DESC
+        OFFSET ${MAX_NOTIFICATIONS}
+      )
+  `;
 }
 
 // 清理失败不影响主流程。
@@ -119,7 +116,11 @@ async function upsertNotification(userId: string, data: NotificationData) {
   if (data.aggregateKey) {
     // 并发时可能产生两条等价通知；不影响业务正确性，不加分布式锁。
     const merged = await mergeIntoAggregate(userId, data, actor);
-    if (merged) return merged;
+    // 合并路径同样需要清理，否则只收聚合通知的用户会长期超过上限。
+    if (merged) {
+      maybeCleanup(userId);
+      return merged;
+    }
   }
 
   const created = await prisma.notification.create({

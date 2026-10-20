@@ -9,6 +9,11 @@ type HCaptchaResponse = {
 export async function verifyHCaptcha(token: string): Promise<boolean> {
   const secret = process.env.HCAPTCHA_SECRET_KEY;
   if (!secret) return true;
+  // 缺少站点密钥时前端不渲染控件，令牌无法获取；按未配置处理并记录错误，避免所有申请被永久拒绝。
+  if (!process.env.NEXT_PUBLIC_HCAPTCHA_SITE_KEY) {
+    console.error("hCaptcha 配置不完整：缺少 NEXT_PUBLIC_HCAPTCHA_SITE_KEY，已跳过人机验证");
+    return true;
+  }
   if (!token) return false;
 
   try {

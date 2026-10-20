@@ -13,6 +13,19 @@ import { loginSchema } from "@/lib/validation";
 // JWT 展示字段定期回源，避免每次请求查库。
 const SYNC_INTERVAL_MS = 5 * 60 * 1000;
 const DUMMY_PASSWORD_HASH = "$2b$10$7EqJtq98hPqEX7fNZaFWoO7u0w8bJ0Vnq1o8gJr5l9hL0yKc6V8mK";
+// 登录限流只统计失败尝试：既挡住撞库，也避免用错误密码把他人账号锁死，
+// 成功登录不消耗共享出口 IP 的配额。
+const LOGIN_IP_LIMIT = 40;
+const LOGIN_EMAIL_LIMIT = 10;
+const LOGIN_WINDOW_MS = 15 * 60 * 1000;
+
+// 登录失败才计数：IP 维度挡住撞库，邮箱维度限制单账号尝试次数。
+async function recordLoginFailure(ip: string, email: string): Promise<void> {
+  await Promise.all([
+    rateLimit.checkAndHit("login-ip", ip, LOGIN_IP_LIMIT, LOGIN_WINDOW_MS),
+    rateLimit.checkAndHit("login-email", email, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW_MS),
+  ]);
+}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   // 生产默认不信任 Host 头；AUTH_TRUST_HOST=true 可显式开启。
@@ -31,29 +44,36 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const { email, password } = parsed.data;
         const ip = await getClientIp();
         // 放在认证入口，页面 Action 与 Auth.js 回调均受限流约束。
-        const ipCheck = await rateLimit.checkAndHit("login-ip", ip, 20, 15 * 60 * 1000);
-        if (ipCheck.blocked) return null;
-        const emailCheck = await rateLimit.checkAndHit("login-email", email, 5, 15 * 60 * 1000);
-        if (emailCheck.blocked) return null;
+        // 预检不计数，只有失败尝试才写入计数。
+        const ipBlocked = await rateLimit.isBlocked("login-ip", ip, LOGIN_IP_LIMIT);
+        if (ipBlocked.blocked) return null;
+        const emailBlocked = await rateLimit.isBlocked("login-email", email, LOGIN_EMAIL_LIMIT);
+        if (emailBlocked.blocked) return null;
 
         const user = await prisma.user.findUnique({ where: { email } });
         if (!user) {
           await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+          await recordLoginFailure(ip, email);
           return null;
         }
 
         if (user.disabled) {
           await bcrypt.compare(password, user.password);
+          await recordLoginFailure(ip, email);
           return null;
         }
 
         if (!user.activatedAt) {
           await bcrypt.compare(password, user.password);
+          await recordLoginFailure(ip, email);
           return null;
         }
 
         const valid = await bcrypt.compare(password, user.password);
-        if (!valid) return null;
+        if (!valid) {
+          await recordLoginFailure(ip, email);
+          return null;
+        }
 
         // 只有凭据正确才能触发未首次登录账号的回收。
         const graceDays = user.inviteCodeId ? 14 : 7;

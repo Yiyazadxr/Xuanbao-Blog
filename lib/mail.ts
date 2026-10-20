@@ -19,10 +19,17 @@ export async function sendMail(to: string, subject: string, text: string): Promi
     return false;
   }
 
+  const port = Number(SMTP_PORT) || 465;
   const transporter = nodemailer.createTransport({
     host: SMTP_HOST || "smtp.qq.com",
-    port: Number(SMTP_PORT) || 465,
-    secure: true, // QQ 邮箱 465 端口走 SSL
+    port,
+    // 465 端口直接走 SSL；其余端口（如 587）走 STARTTLS，不允许明文传输。
+    secure: port === 465,
+    requireTLS: port !== 465,
+    // 邮件服务无响应时不能让请求一直挂起：审批流程会卡在 PROCESSING。
+    connectionTimeout: 10_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 15_000,
     auth: { user: SMTP_USER, pass: SMTP_PASS }, // pass 是 QQ 邮箱授权码
   });
 

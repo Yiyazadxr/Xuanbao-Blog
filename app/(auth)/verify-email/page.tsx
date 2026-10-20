@@ -7,6 +7,7 @@ import {
   primaryBtnCls,
 } from "@/components/ui/form-styles";
 import { getVerificationTarget } from "@/lib/account-verification";
+import { VERIFICATION_FAILURE, type VerificationFailureReason } from "@/lib/verification-result";
 import { verifyEmailAction } from "./actions";
 
 export const metadata: Metadata = {
@@ -14,12 +15,56 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+const failureViews: Record<Exclude<VerificationFailureReason, "password">, {
+  title: string;
+  description: string;
+  link: string;
+  action: string;
+}> = {
+  [VERIFICATION_FAILURE.INVALID_LINK]: {
+    title: "链接无效或已过期",
+    description: "链接可能已被使用。请重新提交申请；如果已经提交过，请使用最新一封验证邮件里的链接。",
+    link: "/register",
+    action: "重新申请",
+  },
+  [VERIFICATION_FAILURE.EXPIRED]: {
+    title: "验证链接已过期",
+    description: "请重新提交申请，使用新邮件中的验证链接。",
+    link: "/register",
+    action: "重新申请",
+  },
+  [VERIFICATION_FAILURE.INVITE_INVALID]: {
+    title: "邀请码已失效",
+    description: "邀请码无效或已用尽，请使用有效邀请码重新申请。",
+    link: "/register",
+    action: "重新申请",
+  },
+  [VERIFICATION_FAILURE.ACCOUNT_EXISTS]: {
+    title: "该邮箱已有账号",
+    description: "该邮箱已有可用账号，请直接登录。",
+    link: "/login",
+    action: "前往登录",
+  },
+  [VERIFICATION_FAILURE.USED]: {
+    title: "链接已使用",
+    description: "此链接不能重复验证。如已提交申请，请等待审核。",
+    link: "/",
+    action: "返回首页",
+  },
+  [VERIFICATION_FAILURE.RETRY]: {
+    title: "验证暂时失败",
+    description: "请稍后使用同一链接重试，无需重新申请。",
+    link: "/register",
+    action: "重新申请",
+  },
+};
+
 export default async function VerifyEmailPage({
   searchParams,
 }: {
-  searchParams: Promise<{ token?: string; status?: string }>;
+  searchParams: Promise<{ token?: string; status?: string; reason?: string }>;
 }) {
-  const { token, status } = await searchParams;
+  const { token, status, reason } = await searchParams;
 
   if (status === "success") {
     return (
@@ -38,17 +83,23 @@ export default async function VerifyEmailPage({
     );
   }
 
+  const retryLink = reason === VERIFICATION_FAILURE.RETRY && token && token.length <= 200
+    ? `/verify-email?token=${encodeURIComponent(token)}`
+    : null;
+  const failure = reason && Object.hasOwn(failureViews, reason) && (reason !== VERIFICATION_FAILURE.RETRY || retryLink)
+    ? failureViews[reason as Exclude<VerificationFailureReason, "password">]
+    : failureViews[VERIFICATION_FAILURE.INVALID_LINK];
   const errorView = (
     <>
-      <h1 className="font-display text-3xl font-bold tracking-tight">链接无效或已过期</h1>
+      <h1 className="font-display text-3xl font-bold tracking-tight">{failure.title}</h1>
       <p className="mt-2 text-sm leading-relaxed text-muted">
-        链接可能已被使用。请重新提交申请；如果已经提交过，请使用最新一封验证邮件里的链接。
+        {failure.description}
       </p>
       <Link
-        href="/register"
+        href={retryLink ?? failure.link}
         className="mt-8 inline-flex text-sm font-medium text-accent hover:underline"
       >
-        重新申请
+        {retryLink ? "重试验证" : failure.action}
       </Link>
     </>
   );
@@ -67,7 +118,7 @@ export default async function VerifyEmailPage({
       </p>
       {status === "invalid" && (
         <p role="alert" className={`${errorCls} mt-4`}>
-          密码至少 8 位，且两次输入一致。
+          密码须为 8 至 72 位，且两次输入一致。
         </p>
       )}
       <form action={verifyEmailAction} className="mt-6 space-y-5">
