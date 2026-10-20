@@ -3,7 +3,7 @@
 import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
-import { toggleLike } from "@/app/(blog)/blog/actions";
+import { setLike } from "@/app/(blog)/blog/actions";
 
 export function LikeButton({
   postId,
@@ -32,11 +32,13 @@ export function LikeButton({
       return;
     }
     startTransition(async () => {
+      // 提交目标状态而不是「翻转」：并发点击时服务端按状态写入，不会把取消变成点赞。
+      const nextLiked = !optimistic.liked;
       applyOptimistic({
-        liked: !optimistic.liked,
+        liked: nextLiked,
         count: optimistic.count + (optimistic.liked ? -1 : 1),
       });
-      const result = await toggleLike(postId, slug);
+      const result = await setLike(postId, slug, nextLiked);
       if (result.ok && typeof result.count === "number") {
         setState({ count: result.count, liked: Boolean(result.liked) });
       }

@@ -4,10 +4,11 @@ import { prisma } from "@/lib/prisma";
 export async function recordRead(postId: string, userId?: string, wordCount?: number | null) {
   if (!userId) return;
   try {
-    await prisma.readingLog.upsert({
-      where: { userId_postId: { userId, postId } },
-      create: { userId, postId, wordCount: wordCount ?? 0 },
-      update: {},
+    // 空 update 的 upsert 会退化成「先查再写」，并发下可能撞唯一约束；
+    // createMany + skipDuplicates 编译为 INSERT ... ON CONFLICT DO NOTHING，语义一致且原子。
+    await prisma.readingLog.createMany({
+      data: [{ userId, postId, wordCount: wordCount ?? 0 }],
+      skipDuplicates: true,
     });
   } catch (e) {
     console.error("记录阅读失败：", e);

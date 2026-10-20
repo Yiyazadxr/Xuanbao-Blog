@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const { tx, snapshot, transaction } = vi.hoisted(() => {
   const tx = {
     postRevision: { findUnique: vi.fn() },
-    post: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn() },
+    post: { findUnique: vi.fn(), findFirst: vi.fn(), update: vi.fn(), create: vi.fn() },
     category: { findUnique: vi.fn() }, series: { findUnique: vi.fn() },
-    tag: { upsert: vi.fn() },
+    tag: { upsert: vi.fn(), findMany: vi.fn() },
     postTag: { deleteMany: vi.fn(), createMany: vi.fn() },
   };
   return { tx, snapshot: vi.fn(), transaction: vi.fn(async (fn) => fn(tx)) };
@@ -28,6 +28,46 @@ describe("旧编辑表单校验", () => {
   });
 });
 
+describe("标签与并发写入", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    tx.post.findUnique.mockResolvedValue(null);
+    tx.post.findFirst.mockResolvedValue(null);
+    tx.post.create.mockResolvedValue({ id: "new-post" });
+    tx.tag.findMany.mockResolvedValue([]);
+    tx.tag.upsert.mockResolvedValue({ id: "tag" });
+  });
+
+  it("标签链接标识冲突时给出可读错误，不写入文章", async () => {
+    // slugify("Node.js") 与 slugify("Node js") 相同，会撞 Tag.slug 唯一约束。
+    tx.tag.findMany.mockResolvedValue([{ name: "Node.js" }]);
+    const input = postSchema.parse({
+      title: "标题", content: "正文", published: false, featured: false, tags: "Node js",
+    });
+    await expect(writePost(input, "admin")).rejects.toThrow("链接标识");
+    expect(tx.tag.upsert).not.toHaveBeenCalled();
+    expect(tx.post.create).not.toHaveBeenCalled();
+  });
+
+  it("同一批次内两个标签生成相同标识时拒绝保存", async () => {
+    const input = postSchema.parse({
+      title: "标题", content: "正文", published: false, featured: false, tags: "Node.js, Node js",
+    });
+    await expect(writePost(input, "admin")).rejects.toThrow("链接标识");
+    expect(tx.post.create).not.toHaveBeenCalled();
+  });
+
+  it("序列化写冲突自动重试", async () => {
+    const conflict = Object.assign(new Error("write conflict"), { code: "P2034" });
+    transaction.mockImplementationOnce(async () => {
+      throw conflict;
+    });
+    const input = postSchema.parse({ title: "标题", content: "正文", published: false, featured: false });
+    await writePost(input, "admin");
+    expect(transaction).toHaveBeenCalledTimes(2);
+  });
+});
+
 describe("文章版本恢复", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -42,6 +82,7 @@ describe("文章版本恢复", () => {
     tx.category.findUnique.mockResolvedValue(null);
     tx.series.findUnique.mockResolvedValue(null);
     tx.tag.upsert.mockResolvedValue({ id: "tag" });
+    tx.tag.findMany.mockResolvedValue([]);
   });
 
   it("恢复已删除分类的版本时清空失效关联，补齐首次发布时间并去重标签", async () => {

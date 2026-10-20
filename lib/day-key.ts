@@ -1,5 +1,5 @@
 // 当前中国标准时间日键；纯模块，浏览器与数据库统计共用。
-const TZ_OFFSET_MS = 8 * 60 * 60 * 1000;
+export const TZ_OFFSET_MS = 8 * 60 * 60 * 1000;
 
 export function dayKeyOf(date: Date = new Date()): string {
   return new Date(date.getTime() + TZ_OFFSET_MS).toISOString().slice(0, 10);

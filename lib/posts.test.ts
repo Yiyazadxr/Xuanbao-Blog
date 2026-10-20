@@ -105,6 +105,7 @@ it("系列目录按创建时间和 ID 升序排列，且不读取正文", async 
     orderBy: [{ createdAt: "asc" }, { id: "asc" }],
     select: expect.not.objectContaining({ content: true }),
   }));
+  expect(findMany.mock.lastCall?.[0]).not.toHaveProperty("take");
 });
 
 it("同时间的普通文章通过 ID 确定相邻顺序", async () => {

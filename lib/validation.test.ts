@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   applySchema,
   batchPostsSchema,
+  bookmarkSchema,
   changePasswordSchema,
   commentPageSchema,
   commentSchema,
@@ -169,8 +170,13 @@ describe("错误文案中文化", () => {
   });
 
   it("likeSchema 超长 postId 报文章 ID 过长", () => {
-    const res = parseInput(likeSchema, { postId: "x".repeat(101), slug: "s" });
+    const res = parseInput(likeSchema, { postId: "x".repeat(101), slug: "s", liked: true });
     expect(res.error).toBe("文章 ID 过长");
+  });
+
+  it("likeSchema 与 bookmarkSchema 要求布尔状态", () => {
+    expect(parseInput(likeSchema, { postId: "p", slug: "s" }).error).toBe("点赞状态不合法");
+    expect(parseInput(bookmarkSchema, { postId: "p" }).error).toBe("收藏状态不合法");
   });
 
   it("commentPageSchema 拒绝无效时间游标", () => {

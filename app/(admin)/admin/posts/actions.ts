@@ -83,6 +83,8 @@ export async function togglePublish(id: string): Promise<AdminActionState> {
     where: { id: pid.data },
     data: {
       published,
+      // 发布时解除归档，否则文章仍不进入公开列表。
+      ...(published ? { archived: false } : {}),
       publishedAt: published && !post.publishedAt ? new Date() : post.publishedAt,
     },
   });

@@ -9,6 +9,7 @@ import {
 } from "@/components/admin/InviteActions";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Pagination } from "@/components/ui/Pagination";
+import { parsePage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { formatDate } from "@/lib/utils";
 
@@ -34,30 +35,33 @@ export default async function AdminInvitesPage({
   const canManage = Boolean(await requirePermission(PERMISSIONS.MANAGE_INVITES));
   if (!canReview && !canManage) redirect("/admin");
   const { req: reqParam, inv: invParam } = await searchParams;
-  const reqPage = Math.max(1, Number(reqParam) || 1);
-  const invPage = Math.max(1, Number(invParam) || 1);
 
-  const [requests, reqTotal, invites, invTotal] = await Promise.all([
+  // 先取总数再钳制页码，避免异常参数产生超大 offset。
+  const [reqTotal, invTotal] = await Promise.all([
+    canReview ? prisma.accountRequest.count({ where: { status: { not: "UNVERIFIED" } } }) : 0,
+    canManage ? prisma.inviteCode.count() : 0,
+  ]);
+  const reqPage = Math.min(parsePage(reqParam), Math.max(1, Math.ceil(reqTotal / PAGE_SIZE)));
+  const invPage = Math.min(parsePage(invParam), Math.max(1, Math.ceil(invTotal / PAGE_SIZE)));
+
+  const [requests, invites] = await Promise.all([
     canReview ? prisma.accountRequest.findMany({
       where: { status: { not: "UNVERIFIED" } },
       orderBy: { createdAt: "desc" },
       skip: (reqPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
     }) : [],
-    canReview ? prisma.accountRequest.count({ where: { status: { not: "UNVERIFIED" } } }) : 0,
     canManage ? prisma.inviteCode.findMany({
       orderBy: { createdAt: "desc" },
       skip: (invPage - 1) * PAGE_SIZE,
       take: PAGE_SIZE,
       include: { usedBy: { select: { name: true, email: true } } },
     }) : [],
-    canManage ? prisma.inviteCode.count() : 0,
   ]);
   const reqTotalPages = Math.max(1, Math.ceil(reqTotal / PAGE_SIZE));
   const invTotalPages = Math.max(1, Math.ceil(invTotal / PAGE_SIZE));
 
   // 服务端请求期间取当前时间，不参与客户端重渲染。
-  // eslint-disable-next-line react-hooks/purity
   const now = Date.now();
 
   return (

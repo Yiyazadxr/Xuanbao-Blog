@@ -2,6 +2,7 @@ import { prisma } from "@/lib/prisma";
 import { snapshotPost } from "@/lib/post-revisions";
 import { buildSearchText, countWords, plainExcerpt } from "@/lib/utils";
 import { slugify } from "@/lib/slug";
+import type { Prisma } from "@/lib/generated/prisma/client";
 import type { z } from "zod";
 import type { postSchema, batchPostsSchema } from "@/lib/validation";
 
@@ -12,8 +13,56 @@ export class PostWriteError extends Error {
   }
 }
 
+// Serializable 事务遇到并发写入同一行会以 P2034 中止；短暂冲突重试即可。
+const MAX_WRITE_ATTEMPTS = 3;
+
+function isWriteConflict(error: unknown): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "P2034"
+  );
+}
+
+async function withWriteRetry<T>(run: () => Promise<T>): Promise<T> {
+  let lastError: unknown;
+  for (let attempt = 1; attempt <= MAX_WRITE_ATTEMPTS; attempt++) {
+    try {
+      return await run();
+    } catch (error) {
+      if (!isWriteConflict(error)) throw error;
+      lastError = error;
+      if (attempt < MAX_WRITE_ATTEMPTS) {
+        await new Promise((resolve) => setTimeout(resolve, attempt * 60));
+      }
+    }
+  }
+  throw lastError;
+}
+
+// 标签名经 slugify 后可能与已有标签撞唯一约束；保存前先检查并给出可读提示。
+async function findTagSlugConflict(
+  tx: Prisma.TransactionClient,
+  names: string[]
+): Promise<string | null> {
+  const slugs = names.map((name) => slugify(name));
+  const seen = new Set<string>();
+  for (const [index, slug] of slugs.entries()) {
+    if (seen.has(slug)) return names[index];
+    seen.add(slug);
+  }
+  if (seen.size === 0) return null;
+  const existing = await tx.tag.findMany({
+    where: { slug: { in: [...seen] } },
+    select: { name: true },
+  });
+  const hit = existing.find((tag) => !names.includes(tag.name));
+  return hit ? hit.name : null;
+}
+
 export async function writePost(p: z.infer<typeof postSchema>, authorId: string) {
-  return prisma.$transaction(async (tx) => {
+  return withWriteRetry(() => prisma.$transaction(async (tx) => {
     const existing = p.id ? await tx.post.findUnique({
       where: { id: p.id }, include: { tags: { include: { tag: true } } },
     }) : null;
@@ -42,6 +91,10 @@ export async function writePost(p: z.infer<typeof postSchema>, authorId: string)
       updatedAt: new Date(Math.max(Date.now(), (existing?.updatedAt.getTime() ?? 0) + 1)),
     };
     const names = [...new Set(p.tags.split(/[,，、]/).map((name) => name.trim()).filter(Boolean))];
+    const tagConflict = await findTagSlugConflict(tx, names);
+    if (tagConflict) {
+      throw new PostWriteError(`标签「${tagConflict}」的链接标识与其他标签重复，请换一个名称`);
+    }
     const tags = await Promise.all(names.map((name) => tx.tag.upsert({
       where: { name }, update: {}, create: { name, slug: slugify(name) },
     })));
@@ -56,11 +109,11 @@ export async function writePost(p: z.infer<typeof postSchema>, authorId: string)
     }
     if (tags.length) await tx.postTag.createMany({ data: tags.map((tag) => ({ postId: id, tagId: tag.id })) });
     return id;
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }
 
 export async function batchWritePosts(input: z.infer<typeof batchPostsSchema>) {
-  return prisma.$transaction(async (tx) => {
+  return withWriteRetry(() => prisma.$transaction(async (tx) => {
     const { ids, operation, categoryId } = input;
     const where = { id: { in: ids } };
     if (operation === "delete") {
@@ -73,7 +126,8 @@ export async function batchWritePosts(input: z.infer<typeof batchPostsSchema>) {
     }
     if (operation === "publish") {
       await tx.post.updateMany({ where: { ...where, publishedAt: null }, data: { publishedAt: new Date() } });
-      await tx.post.updateMany({ where, data: { published: true } });
+      // 发布同时解除归档，否则文章仍不进入公开列表。
+      await tx.post.updateMany({ where, data: { published: true, archived: false } });
     } else if (operation === "category") {
       if (categoryId && !await tx.category.findUnique({ where: { id: categoryId } })) {
         throw new PostWriteError("分类不存在");
@@ -83,12 +137,12 @@ export async function batchWritePosts(input: z.infer<typeof batchPostsSchema>) {
       await tx.post.updateMany({ where, data: operation === "unpublish" ? { published: false } : { archived: true } });
     }
     return [];
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }
 
 /** 权限和输入校验由调用方完成；业务读取和写入共享事务快照。 */
 export async function restoreRevision(revisionId: string, authorId: string) {
-  return prisma.$transaction(async (tx) => {
+  return withWriteRetry(() => prisma.$transaction(async (tx) => {
     const revision = await tx.postRevision.findUnique({ where: { id: revisionId } });
     if (!revision) throw new PostWriteError("版本不存在");
     const post = await tx.post.findUnique({
@@ -114,6 +168,10 @@ export async function restoreRevision(revisionId: string, authorId: string) {
       throw new PostWriteError("版本标签数据损坏，无法回滚");
     }
     const tagNames = [...new Set((names as string[]).map((name) => name.trim()).filter(Boolean))];
+    const tagConflict = await findTagSlugConflict(tx, tagNames);
+    if (tagConflict) {
+      throw new PostWriteError(`标签「${tagConflict}」的链接标识与其他标签重复，无法回滚`);
+    }
 
     await snapshotPost(tx, post, authorId);
     await tx.post.update({
@@ -136,5 +194,5 @@ export async function restoreRevision(revisionId: string, authorId: string) {
     if (tags.length) await tx.postTag.createMany({
       data: tags.map((tag) => ({ postId: post.id, tagId: tag.id })),
     });
-  }, { isolationLevel: "Serializable" });
+  }, { isolationLevel: "Serializable" }));
 }

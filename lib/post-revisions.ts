@@ -28,10 +28,12 @@ export async function snapshotPost(
     archived: post.archived,
     authorId,
   } });
+  // 单次裁剪的行数设上限，避免一次性拼出超长 IN 列表。
   const obsolete = await tx.postRevision.findMany({
     where: { postId: post.id },
     orderBy: [{ createdAt: "desc" }, { id: "desc" }],
     skip: MAX_REVISIONS,
+    take: 200,
     select: { id: true },
   });
   if (obsolete.length) {

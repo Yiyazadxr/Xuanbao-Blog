@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import { QUERY_LIMITS, SITE } from "@/lib/constants";
 import { recordDailyView } from "@/lib/daily-stats";
+import { TZ_OFFSET_MS } from "@/lib/day-key";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { readingTimeFromWordCount, daysBetween, searchSnippet } from "@/lib/utils";
@@ -365,7 +366,8 @@ export async function getArchive() {
   });
   const byYear = new Map<number, typeof posts>();
   for (const post of posts) {
-    const year = post.createdAt.getFullYear();
+    // 年份分组同样按东八区，避免跨年边界归错年份。
+    const year = new Date(post.createdAt.getTime() + TZ_OFFSET_MS).getUTCFullYear();
     if (!byYear.has(year)) byYear.set(year, []);
     byYear.get(year)!.push(post);
   }

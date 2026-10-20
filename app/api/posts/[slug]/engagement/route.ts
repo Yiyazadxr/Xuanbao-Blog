@@ -26,5 +26,5 @@ export async function GET(_req: Request, { params }: { params: Promise<{ slug: s
     liked: like.liked,
     bookmarked: bookmark.bookmarked,
     isLoggedIn: Boolean(user),
-  });
+  }, { headers: { "Cache-Control": "private, no-store" } });
 }

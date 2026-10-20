@@ -1,12 +1,16 @@
 
+import { TZ_OFFSET_MS } from "@/lib/day-key";
+
 export function formatCount(value: number): string {
   return Math.max(0, Math.round(value)).toLocaleString("zh-CN");
 }
 
 // 日期格式化：2026 年 7 月 17 日
+// 服务端运行时时区为 UTC，浏览器为本地时区；统一按东八区取值，
+// 否则北京时间 00:00-08:00 的内容会显示成前一天，且前后端渲染不一致。
 export function formatDate(date: Date | string): string {
-  const d = new Date(date);
-  return `${d.getFullYear()} 年 ${d.getMonth() + 1} 月 ${d.getDate()} 日`;
+  const d = new Date(new Date(date).getTime() + TZ_OFFSET_MS);
+  return `${d.getUTCFullYear()} 年 ${d.getUTCMonth() + 1} 月 ${d.getUTCDate()} 日`;
 }
 
 // 相对时间：刚刚 / N 分钟前 / N 小时前 / N 天前（超过 30 天回落绝对日期）
@@ -25,7 +29,8 @@ export function formatRelativeTime(date: Date | string): string {
 }
 
 export function formatDateTime(date: Date | string): string {
-  return new Date(date).toLocaleString("zh-CN");
+  // 固定东八区，避免服务端（UTC）与浏览器（本地时区）显示不一致。
+  return new Date(date).toLocaleString("zh-CN", { timeZone: "Asia/Shanghai" });
 }
 
 // 两个日期之间的整天数（向下取整，未来时间钳到 0）；注册天数与建站天数共用。

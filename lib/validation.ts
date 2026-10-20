@@ -104,6 +104,28 @@ export const changePasswordSchema = z.object({
 // 摘要长度由前后端共用。
 export const EXCERPT_MAX = 500;
 
+// 封面只允许本地上传路径或已配置图床域名；其它域名会让 next/image 在渲染期报错，公开页直接 500。
+const ALLOWED_IMAGE_HOSTS = ["githubusercontent.com", "public.blob.vercel-storage.com"];
+
+export function isAllowedImageUrl(value: string): boolean {
+  if (value.startsWith("/")) return value.startsWith("/uploads/");
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return false;
+    return ALLOWED_IMAGE_HOSTS.some(
+      (host) => url.hostname === host || url.hostname.endsWith(`.${host}`)
+    );
+  } catch {
+    return false;
+  }
+}
+
+export const coverImageSchema = z
+  .string()
+  .trim()
+  .max(500, "封面地址过长")
+  .refine((v) => v === "" || isAllowedImageUrl(v), "封面地址不被允许");
+
 export const postSchema = z.object({
   id: z.string().trim().max(100, "文章 ID 过长").optional(),
   expectedUpdatedAt: z.iso.datetime().optional(),
@@ -114,7 +136,7 @@ export const postSchema = z.object({
     .max(1_000_000, "正文过长")
     .refine((v) => v.trim().length > 0, "正文不能为空"),
   excerpt: z.string().trim().max(EXCERPT_MAX, `摘要最长 ${EXCERPT_MAX} 字`).optional().default(""),
-  coverImage: z.string().trim().max(500, "封面地址过长").nullable().optional().default(null),
+  coverImage: coverImageSchema.nullable().optional().default(null),
   categoryId: z.string().trim().max(100, "分类 ID 过长").nullable().optional().default(null),
   seriesId: z.string().trim().max(100, "系列 ID 过长").nullable().optional().default(null),
   tags: z.string().max(1000, "标签过长").optional().default(""),
@@ -131,9 +153,16 @@ export const commentSchema = z.object({
   parentId: z.string().trim().max(100, "父评论 ID 过长").nullable().optional(),
 });
 
+// 点赞与收藏按目标状态写入（幂等），客户端提交的是期望状态而不是「翻转」。
 export const likeSchema = z.object({
   postId: z.string({ error: "文章 ID 不合法" }).trim().min(1, "缺少文章 ID").max(100, "文章 ID 过长"),
   slug: z.string({ error: "文章标识不合法" }).trim().min(1, "缺少文章标识").max(200, "文章标识过长"),
+  liked: z.boolean({ error: "点赞状态不合法" }),
+});
+
+export const bookmarkSchema = z.object({
+  postId: z.string({ error: "文章 ID 不合法" }).trim().min(1, "缺少文章 ID").max(100, "文章 ID 过长"),
+  bookmarked: z.boolean({ error: "收藏状态不合法" }),
 });
 
 export const postPageQuerySchema = z.object({

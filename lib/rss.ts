@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
 import { SITE } from "@/lib/constants";
+import { parsePage as parsePageParam } from "@/lib/pagination";
 import { plainExcerpt } from "@/lib/utils";
 
 export const RSS_PAGE_SIZE = 20;
@@ -98,11 +99,9 @@ export const getCachedRssFeedData = unstable_cache(
   { revalidate: 60 }
 );
 
-// 非法页码回落到第 1 页，并钳制到上限。
+// 非法页码回落到第 1 页，并钳制到上限；页码规则与列表页共用 lib/pagination。
 export function parsePage(searchParams: URLSearchParams): number {
-  const raw = Number(searchParams.get("page"));
-  if (!Number.isFinite(raw) || raw < 1) return 1;
-  return Math.min(Math.floor(raw), RSS_MAX_PAGE);
+  return Math.min(parsePageParam(searchParams.get("page")), RSS_MAX_PAGE);
 }
 
 export function buildRssFeed(opts: {

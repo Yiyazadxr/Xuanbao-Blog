@@ -1,5 +1,37 @@
 import { describe, expect, it } from "vitest";
-import { normalizePermissions, PERMISSIONS } from "@/lib/permissions";
+import {
+  ALL_PERMISSIONS,
+  DEFAULT_ROLE_PERMISSIONS,
+  normalizePermissions,
+  PERMISSION_GROUPS,
+  PERMISSION_LABELS,
+  PERMISSIONS,
+} from "@/lib/permissions";
+import { ROLES } from "@/lib/roles";
+
+describe("权限清单", () => {
+  it("共 9 项权限且每项都有标签", () => {
+    expect(ALL_PERMISSIONS).toHaveLength(9);
+    for (const permission of ALL_PERMISSIONS) {
+      expect(PERMISSION_LABELS[permission]).toBeTruthy();
+    }
+  });
+
+  it("分组覆盖全部权限", () => {
+    const grouped = PERMISSION_GROUPS.flatMap((group) => group.permissions);
+    expect(new Set(grouped)).toEqual(new Set(ALL_PERMISSIONS));
+  });
+
+  it("默认角色权限只引用已知权限", () => {
+    for (const list of Object.values(DEFAULT_ROLE_PERMISSIONS)) {
+      for (const permission of list) {
+        expect(ALL_PERMISSIONS).toContain(permission);
+      }
+    }
+    // 超级管理员固定全开
+    expect(DEFAULT_ROLE_PERMISSIONS[ROLES.SUPER_ADMIN]).toEqual(ALL_PERMISSIONS);
+  });
+});
 
 describe("normalizePermissions", () => {
   it("保留合法权限并去重", () => {

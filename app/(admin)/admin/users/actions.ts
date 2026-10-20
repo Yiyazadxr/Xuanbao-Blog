@@ -30,7 +30,11 @@ export async function updateUserRole(
   if (!target) return { ok: false, error: "用户不存在" };
   if (target.role === ROLES.SUPER_ADMIN) return { ok: false, error: "不能修改超级管理员的角色" };
 
-  await prisma.user.update({ where: { id: uid }, data: { role: targetRole } });
+  // 角色变化会写进 JWT；递增会话版本让旧令牌立即失效，避免降权后仍显示旧角色。
+  await prisma.user.update({
+    where: { id: uid },
+    data: { role: targetRole, sessionVersion: { increment: 1 } },
+  });
   revalidatePath("/admin/users");
   return { ok: true, message: targetRole === "ADMIN" ? "已设为管理员" : "已设为成员" };
 }
@@ -110,6 +114,7 @@ export async function unmuteUser(userId: string): Promise<UserActionState> {
 
   const target = await prisma.user.findUnique({ where: { id: uid } });
   if (!target) return { ok: false, error: "用户不存在" };
+  if (target.role === ROLES.SUPER_ADMIN) return { ok: false, error: "不能操作超级管理员" };
 
   await prisma.user.update({
     where: { id: uid },

@@ -71,18 +71,8 @@ export async function approveRequest(requestId: string): Promise<AdminActionStat
   if (claimed.count !== 1) return { ok: false, error: "该申请正在处理或已完成" };
 
   const { subject, text } = buildApprovalEmail({ email, graceDays });
-  try {
-    const sent = await sendMail(email, subject, text);
-    if (!sent) throw new Error("MAIL_NOT_SENT");
-  } catch (error) {
-    console.error("审核通过邮件发送失败：", error);
-    await prisma.accountRequest.updateMany({
-      where: { id: ridId, status: "PROCESSING", updatedAt: claimStartedAt },
-      data: { status: "PENDING" },
-    });
-    return { ok: false, error: "邮件发送失败，申请仍为待审核状态，请修复邮件服务后重试" };
-  }
-
+  // 先落库再发信：账号状态是事实，邮件只是通知。
+  // 反过来会在事务失败时让申请人收到「账号已激活」的邮件，但账号并不可用。
   try {
     await prisma.$transaction(async (tx) => {
       const existing = await tx.user.findUnique({ where: { email } });
@@ -137,25 +127,42 @@ export async function approveRequest(requestId: string): Promise<AdminActionStat
       if (finalized.count !== 1) throw new Error("REQUEST_TAKEN");
     });
   } catch (error) {
+    // 释放 PROCESSING 占用，避免申请在租约期内既不能通过也不能拒绝。
+    await prisma.accountRequest.updateMany({
+      where: { id: ridId, status: "PROCESSING", updatedAt: claimStartedAt },
+      data: { status: "PENDING" },
+    });
     if (error instanceof Error) {
       if (error.message === "REQUEST_TAKEN") {
-        return { ok: false, error: "通知已发送，但申请状态发生变化，请检查账号后再处理" };
+        return { ok: false, error: "申请状态已变化，请检查账号后再处理" };
       }
       if (error.message === "INVALID_PENDING_USER") {
-        return { ok: false, error: "通知已发送，但待审核账号不存在，请检查账号后再处理" };
+        return { ok: false, error: "待审核账号不存在，请检查账号后再处理" };
       }
       if (
         error.message === "EMAIL_ALREADY_EXISTS" ||
         error.message === "EMAIL_RESERVED"
       ) {
-        return { ok: false, error: "通知已发送，但该邮箱已有可用账号，请检查账号后再处理" };
+        return { ok: false, error: "该邮箱已有可用账号，请检查账号后再处理" };
       }
     }
     console.error("审核账号申请失败：", error);
-    throw error;
+    return { ok: false, error: "审核失败，请稍后重试" };
+  }
+
+  // 账号已激活后通知申请人；邮件失败不回滚已激活的账号。
+  let notified = true;
+  try {
+    notified = await sendMail(email, subject, text);
+  } catch (error) {
+    console.error("审核通过邮件发送失败：", error);
+    notified = false;
   }
 
   revalidatePath("/admin/invites");
+  if (!notified) {
+    return { ok: true, message: `已通过，账号已激活；通知邮件发送失败，请手动通知 ${email}` };
+  }
   return {
     ok: true,
     message: `已通过，账号已激活；通知邮件已发送至 ${email}，请在 ${graceDays} 天内登录`,
@@ -200,7 +207,7 @@ export async function rejectRequest(requestId: string): Promise<AdminActionState
     if (isInvitePath) {
       const pendingUser = await tx.user.findFirst({
         where: { email: request.email, role: ROLES.MEMBER, activatedAt: null },
-        select: { id: true, inviteCodeId: true },
+        select: { id: true, inviteCodeId: true, _count: { select: { posts: true, comments: true } } },
       });
       if (pendingUser?.inviteCodeId) {
         await tx.inviteCode.updateMany({
@@ -209,9 +216,14 @@ export async function rejectRequest(requestId: string): Promise<AdminActionState
         });
       }
       // 拒绝邀请码申请时删除预建账号，释放邮箱。
-      await tx.user.deleteMany({
-        where: { email: request.email, role: ROLES.MEMBER, activatedAt: null },
-      });
+      // 有历史内容的账号不能删除（外键限制会让整个拒绝事务回滚），改为停用。
+      if (pendingUser) {
+        if (pendingUser._count.posts > 0 || pendingUser._count.comments > 0) {
+          await tx.user.update({ where: { id: pendingUser.id }, data: { disabled: true } });
+        } else {
+          await tx.user.delete({ where: { id: pendingUser.id } });
+        }
+      }
     }
     return true;
   });

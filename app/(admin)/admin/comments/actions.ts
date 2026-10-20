@@ -88,7 +88,10 @@ export async function deleteComment(id: string): Promise<AdminActionState> {
   if (!comment) return { ok: false, error: "评论不存在" };
   const permitted = moderator || comment.authorId === user.id;
   if (!permitted) return { ok: false, error: "无权限" };
-  await prisma.comment.deleteMany({ where: { OR: [{ id: cid.data }, { parentId: cid.data }] } });
+  // 删除父评论时一并删除其下回复（回复的父级外键为 SET NULL，回复不能独立存在）。
+  await prisma.comment.deleteMany({
+    where: { OR: [{ id: cid.data }, { parentId: cid.data }] },
+  });
   revalidatePath(`/blog/${comment.post.slug}`);
   revalidatePath("/admin/comments");
   return { ok: true, message: "已删除" };

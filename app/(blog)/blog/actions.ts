@@ -1,7 +1,6 @@
 "use server";
 
 // 公开互动需登录并具备对应权限。
-import { revalidatePath } from "next/cache";
 import { getFreshUser, requirePermission } from "@/lib/auth";
 import { getApprovedComments } from "@/lib/comments";
 import type { CommentCursor, CommentWithReplies } from "@/lib/comment-types";
@@ -13,7 +12,7 @@ import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { ROLES } from "@/lib/roles";
 import { formatDateTime } from "@/lib/utils";
-import { commentPageSchema, commentSchema, likeSchema, parseId, parseInput } from "@/lib/validation";
+import { bookmarkSchema, commentPageSchema, commentSchema, likeSchema, parseInput } from "@/lib/validation";
 
 export type CommentActionState = { ok: boolean; error?: string; message?: string };
 
@@ -37,7 +36,7 @@ export async function submitComment(payload: unknown): Promise<CommentActionStat
 
   const parsed = parseInput(commentSchema, payload);
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
-  const { postId, slug, content, parentId } = parsed.data;
+  const { postId, content, parentId } = parsed.data;
 
   const isSuperAdmin = user.role === ROLES.SUPER_ADMIN;
 
@@ -72,32 +71,40 @@ export async function submitComment(payload: unknown): Promise<CommentActionStat
 
   // SUPER_ADMIN 评论直接公开。
   if (!isSuperAdmin) {
-    await notifyAdmins({
-      category: NOTIFICATION_CATEGORIES.COMMENT,
-      type: parentId ? "reply_pending" : "comment_pending",
-      actorName: user.name,
-      title: parentId ? "回复了评论，待审核" : `评论了你的文章《${post.title}》，待审核`,
-      link: "/admin/comments",
-      // 按「文章 + 类型」聚合
-      aggregateKey: `${parentId ? "reply_pending" : "comment_pending"}:${postId}`,
-    });
+    // 通知失败不影响评论入库，交给管理员在后台处理。
+    try {
+      await notifyAdmins({
+        category: NOTIFICATION_CATEGORIES.COMMENT,
+        type: parentId ? "reply_pending" : "comment_pending",
+        actorName: user.name,
+        title: parentId ? "回复了评论，待审核" : `评论了你的文章《${post.title}》，待审核`,
+        link: "/admin/comments",
+        // 按「文章 + 类型」聚合
+        aggregateKey: `${parentId ? "reply_pending" : "comment_pending"}:${postId}`,
+      });
+    } catch (error) {
+      console.error("评论审核通知发送失败：", error);
+    }
   }
 
-  revalidatePath(`/blog/${slug}`);
+  // 点赞数与评论数都在客户端按需拉取，文章页缓存不依赖它们，无需失效。
   return {
     ok: true,
     message: isSuperAdmin ? "评论已发布" : "评论已提交，博主审核通过后会显示在这里",
   };
 }
 
-export async function toggleLike(
+// 点赞按目标状态写入（幂等）：客户端提交「要点赞 / 要取消点赞」，
+// 并发点击不会像先删后建那样把取消操作变成点赞。
+export async function setLike(
   postId: string,
-  slug: string
+  slug: string,
+  liked: boolean
 ): Promise<CommentActionState & { liked?: boolean; count?: number }> {
   const user = await requirePermission(PERMISSIONS.LIKE);
   if (!user) return { ok: false, error: "请先登录再点赞" };
 
-  const parsed = parseInput(likeSchema, { postId, slug });
+  const parsed = parseInput(likeSchema, { postId, slug, liked });
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
   const { postId: pid } = parsed.data;
 
@@ -117,18 +124,17 @@ export async function toggleLike(
   if (!post) return { ok: false, error: "文章不存在" };
 
   const key = { userId: user.id, postId: pid };
-  const removed = await prisma.like.deleteMany({ where: key });
-  const liked = removed.count === 0;
-  if (liked) {
-    let created = false;
+  // 单条 INSERT ... ON CONFLICT DO NOTHING：重复点赞不报错，也不重复计数。
+  const inserted = liked
+    ? await prisma.like.createMany({ data: [key], skipDuplicates: true })
+    : { count: 0 };
+  if (!liked) {
+    await prisma.like.deleteMany({ where: key });
+  }
+
+  // 站内通知文章作者有人点赞（自己赞自己不通知；重复点赞不重复通知）
+  if (liked && inserted.count > 0 && post.authorId !== user.id) {
     try {
-      await prisma.like.create({ data: key });
-      created = true;
-    } catch (error) {
-      if (!isUniqueConstraintError(error)) throw error;
-    }
-    // 站内通知文章作者有人点赞（自己赞自己不通知）
-    if (created && post.authorId !== user.id) {
       await createNotification(post.authorId, {
         category: NOTIFICATION_CATEGORIES.LIKE,
         type: "like",
@@ -138,47 +144,43 @@ export async function toggleLike(
         // 同一篇文章的点赞合并为一条
         aggregateKey: `like:${post.id}`,
       });
+    } catch (error) {
+      // 点赞已写入；通知故障不能把成功操作报告成失败。
+      console.error("点赞通知发送失败：", error);
     }
   }
   const count = await prisma.like.count({ where: { postId: pid } });
 
-  revalidatePath(`/blog/${parsed.data.slug}`);
+  // 点赞数在客户端按需拉取，文章页缓存不依赖它，无需失效。
   return { ok: true, liked, count };
 }
 
-// 收藏仅要求登录，不设独立权限。
-export async function toggleBookmark(
-  postId: string
+// 收藏按目标状态写入（幂等），与点赞一致。
+export async function setBookmark(
+  postId: string,
+  bookmarked: boolean
 ): Promise<CommentActionState & { bookmarked?: boolean }> {
   const user = await getFreshUser();
   if (!user) return { ok: false, error: "请先登录" };
 
-  const parsed = parseId(postId);
+  const parsed = parseInput(bookmarkSchema, { postId, bookmarked });
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
 
   // 仅允许收藏公开文章。
   const post = await prisma.post.findFirst({
-    where: { id: parsed.data, published: true, archived: false },
+    where: { id: parsed.data.postId, published: true, archived: false },
     select: { id: true },
   });
   if (!post) return { ok: false, error: "文章不存在" };
 
-  const key = { userId: user.id, postId: parsed.data };
-  const removed = await prisma.bookmark.deleteMany({ where: key });
-  const bookmarked = removed.count === 0;
+  const key = { userId: user.id, postId: parsed.data.postId };
   if (bookmarked) {
-    try {
-      await prisma.bookmark.create({ data: key });
-    } catch (error) {
-      if (!isUniqueConstraintError(error)) throw error;
-    }
+    await prisma.bookmark.createMany({ data: [key], skipDuplicates: true });
+  } else {
+    await prisma.bookmark.deleteMany({ where: key });
   }
 
   return { ok: true, bookmarked };
-}
-
-function isUniqueConstraintError(error: unknown): boolean {
-  return typeof error === "object" && error !== null && "code" in error && error.code === "P2002";
 }
 
 // 评论公开读取，分页按稳定的时间和 ID 游标继续。

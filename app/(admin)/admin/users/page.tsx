@@ -27,7 +27,10 @@ export default async function AdminUsersPage({
   const { q, page: pageParam } = await searchParams;
   const me = await getFreshUser();
   if (!me) redirect("/");
-  if (!(await hasPermission(me.role as Role, PERMISSIONS.MANAGE_USERS))) redirect("/admin");
+  // 用户管理页需要「管理用户」或「禁言用户」任一权限，单独授予禁言权限也能进入。
+  const canManageUsers = await hasPermission(me.role as Role, PERMISSIONS.MANAGE_USERS);
+  const canMuteUsers = await hasPermission(me.role as Role, PERMISSIONS.MUTE_USERS);
+  if (!canManageUsers && !canMuteUsers) redirect("/admin");
 
   const keyword = q?.trim().slice(0, KEYWORD_MAX) || undefined;
   const where = keyword
@@ -153,6 +156,7 @@ export default async function AdminUsersPage({
                           userId={u.id}
                           currentRole={u.role}
                           isMuted={isMuted}
+                          canManageUsers={canManageUsers}
                           muteInfo={{
                             permanent: u.mutedPermanent,
                             until: u.mutedDuring ? u.mutedDuring.toISOString() : null,

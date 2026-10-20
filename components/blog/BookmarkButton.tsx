@@ -3,7 +3,7 @@
 import { Icon } from "@/components/ui/Icon";
 import { useRouter } from "next/navigation";
 import { useOptimistic, useState, useTransition } from "react";
-import { toggleBookmark } from "@/app/(blog)/blog/actions";
+import { setBookmark } from "@/app/(blog)/blog/actions";
 
 export function BookmarkButton({
   postId,
@@ -25,8 +25,10 @@ export function BookmarkButton({
       return;
     }
     startTransition(async () => {
-      applyOptimistic(!optimistic);
-      const result = await toggleBookmark(postId);
+      // 提交目标状态而不是「翻转」：并发点击时服务端按状态写入，不会把取消变成收藏。
+      const next = !optimistic;
+      applyOptimistic(next);
+      const result = await setBookmark(postId, next);
       if (result.ok && typeof result.bookmarked === "boolean") {
         setState(result.bookmarked);
       }

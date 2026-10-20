@@ -15,9 +15,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       take: QUERY_LIMITS.sitemap,
       select: { slug: true, updatedAt: true },
     }),
-    prisma.category.findMany({ orderBy: { name: "asc" }, take: QUERY_LIMITS.sitemap, select: { slug: true } }),
-    prisma.series.findMany({ orderBy: { name: "asc" }, take: QUERY_LIMITS.sitemap, select: { slug: true } }),
-    prisma.tag.findMany({ orderBy: { name: "asc" }, take: QUERY_LIMITS.sitemap, select: { slug: true } }),
+    // 只收录有公开文章的分类/系列/标签，避免草稿阶段的规划名称提前对外可见。
+    prisma.category.findMany({
+      where: { posts: { some: { published: true, archived: false } } },
+      orderBy: { name: "asc" },
+      take: QUERY_LIMITS.sitemap,
+      select: { slug: true },
+    }),
+    prisma.series.findMany({
+      where: { posts: { some: { published: true, archived: false } } },
+      orderBy: { name: "asc" },
+      take: QUERY_LIMITS.sitemap,
+      select: { slug: true },
+    }),
+    prisma.tag.findMany({
+      where: { posts: { some: { post: { published: true, archived: false } } } },
+      orderBy: { name: "asc" },
+      take: QUERY_LIMITS.sitemap,
+      select: { slug: true },
+    }),
   ]);
 
   const staticPages: MetadataRoute.Sitemap = [

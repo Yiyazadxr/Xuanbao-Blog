@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getFreshUser } from "@/lib/auth";
+import { SITE } from "@/lib/constants";
 import { incrementViewCount } from "@/lib/posts";
 import { recordRead } from "@/lib/reading";
 import { prisma } from "@/lib/prisma";
@@ -10,8 +11,10 @@ import { createHash } from "node:crypto";
 // ISR 页面在客户端上报浏览；同一 SPA 会话去重，失败不影响页面。
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   // 浏览量不需要跨站上报。拒绝浏览器跨站请求，但不把 Origin 当作反机器人凭据。
+  // 基准同时接受请求域名与配置的公开域名：反代或预发布域名下 request.url 的 origin 可能不同。
   const origin = req.headers.get("origin");
-  if (req.headers.get("sec-fetch-site") === "cross-site" || (origin && origin !== new URL(req.url).origin)) {
+  const allowedOrigins = new Set([new URL(req.url).origin, new URL(SITE.url).origin]);
+  if (req.headers.get("sec-fetch-site") === "cross-site" || (origin && !allowedOrigins.has(origin))) {
     return NextResponse.json({ error: "forbidden" }, { status: 403 });
   }
   // 流式限制实际字节数，不能仅信任 Content-Length。
