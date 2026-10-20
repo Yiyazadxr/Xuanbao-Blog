@@ -90,6 +90,7 @@ pnpm dev                    # start the dev server → http://localhost:3000
 - `/blog/[slug]` Post page (ISR): TOC, reading progress, like / bookmark / share, previous / next and series navigation, comments, related posts. Views and reading history are reported from the client
 - `/blog/category/[slug]`, `/blog/tag/[slug]`, `/blog/series/[slug]`, `/blog/archive` Categories / tags / series / archive
 - `/bookmarks` my bookmarks, `/notifications` notification center, `/settings` profile and display preferences
+- `/reading` recent reading: progress is kept in this browser only
 - `/social`, `/tools`, `/about`, `/privacy`, `/terms` content and information pages
 - `/feed.xml` (site-wide) and `/feed.xml/category|tag|series/[slug]`, `/sitemap.xml`, `/robots.txt`, `/opengraph-image`
 
@@ -100,6 +101,7 @@ pnpm dev                    # start the dev server → http://localhost:3000
 
 - `/register`: submit an application or register with an invite code. Both paths send an email verification link first; set your password while verifying. Verified applications enter review, and after approval you can sign in with that password. Verification emails are limited to five per email address per 24 hours
 - `/login`: sign in
+- `/verify-email`: opened from the verification email; verifies the address and sets the login password, with distinct messages for expired links, invalid invites, existing accounts, and retryable failures
 
 </details>
 
@@ -128,6 +130,8 @@ pnpm dev                    # start the dev server → http://localhost:3000
 │   ├── admin/           Admin components, including charts/ (SVG charts)
 │   ├── layout/          Header / Footer / Sidebar / notification bell
 │   ├── blog/            Post cards, lists, TOC
+│   ├── home/            Home: hero, animated backgrounds, poem quote, social links
+│   ├── about/           About page timeline
 │   ├── comments/        Comment section
 │   ├── notifications/   Notification center
 │   └── settings/        User settings
@@ -135,7 +139,9 @@ pnpm dev                    # start the dev server → http://localhost:3000
 │                        reading, invites, notifications, stats, daily-stats,
 │                        validation, rate-limit, permissions, mail, markdown, ...
 ├── prisma/              schema.prisma + migrations/ + seed.ts
-├── scripts/             One-off scripts (backfills, self-tests)
+├── scripts/             One-off scripts (backfills, self-tests) and the build pre-step
+├── types/               Global type augmentations
+├── fonts/               Local fonts
 └── public/              Static assets; without Blob configured, uploads go to public/uploads
 ```
 
@@ -175,7 +181,7 @@ pnpm dev                    # start the dev server → http://localhost:3000
 **Vercel**
 
 1. Create a PostgreSQL database (e.g. [Neon](https://neon.tech)) and set `DATABASE_URL` to the pooled connection string.
-2. Import this repository. The build command is `vercel-build`, i.e. `prisma migrate deploy && next build`.
+2. Import this repository. The build command is `vercel-build`: it runs `scripts/predeploy.mjs` (applies database migrations in production only) and then `next build`. Preview builds do not migrate the database, but static generation may still read it; use a separate preview database.
 3. Set `AUTH_SECRET` and point `NEXT_PUBLIC_SITE_URL` at your domain.
 4. Set `ADMIN_EMAIL` and `ADMIN_PASSWORD` before running the seed script.
 5. Create a Blob store if you need cover or avatar uploads in production. Vercel injects `BLOB_READ_WRITE_TOKEN`.

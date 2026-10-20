@@ -23,7 +23,16 @@ export function PoemQuote() {
   // 首次挂载时选一句：需在客户端运行才能在 SSR 水合一致。
   // 只在挂载后随机一次；这是对客户端随机状态的收尾，允许在 effect 内 setState。
   useEffect(() => {
-    setIndex(Math.floor(Math.random() * POEMS.length)); // eslint-disable-line react-hooks/set-state-in-effect
+    /* eslint-disable react-hooks/set-state-in-effect */
+    setIndex(Math.floor(Math.random() * POEMS.length));
+    /* eslint-enable react-hooks/set-state-in-effect */
+  }, []);
+
+  // 卸载时清理悬停定时器，避免对已卸载组件 setState。
+  useEffect(() => {
+    return () => {
+      if (timer.current) clearTimeout(timer.current);
+    };
   }, []);
 
   const refresh = useCallback(() => {

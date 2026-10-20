@@ -267,6 +267,11 @@ export function DisplayForm() {
         readingProgress: finalProgress,
       });
       setMsg("已开启跨设备同步，换设备登录后会拉取偏好");
+    } catch {
+      // 同步失败时回滚开关状态，避免界面显示「已开启」但账号端没有偏好。
+      setSync(false);
+      setSyncEnabled(false);
+      setMsg("同步失败，请稍后重试");
     } finally {
       setSyncPending(false);
     }
@@ -280,7 +285,7 @@ export function DisplayForm() {
       {/* 字体大小 */}
       <div>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">字体大小</span>
+          <label htmlFor="font-scale" className="text-sm font-medium">字体大小</label>
           <span className="text-sm tabular-nums text-muted">{percent}%</span>
         </div>
         <input
@@ -303,7 +308,7 @@ export function DisplayForm() {
       {/* 页面间距 */}
       <div>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">页面间距</span>
+          <label htmlFor="spacing-scale" className="text-sm font-medium">页面间距</label>
           <span className="text-sm tabular-nums text-muted">{spPercent}%</span>
         </div>
         <input
@@ -326,7 +331,7 @@ export function DisplayForm() {
       {/* 正文行距 */}
       <div>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">正文行距</span>
+          <label htmlFor="prose-leading" className="text-sm font-medium">正文行距</label>
           <span className="text-sm tabular-nums text-muted">{proseLeading.toFixed(2)}×</span>
         </div>
         <input
@@ -376,10 +381,11 @@ export function DisplayForm() {
         <div className="space-y-4 rounded-xl border border-border p-4">
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">导航栏高度</span>
+              <label htmlFor="header-h" className="text-sm font-medium">导航栏高度</label>
               <span className="text-sm tabular-nums text-muted">{headerH}px</span>
             </div>
             <input
+              id="header-h"
               type="range"
               min={HEADER_H_MIN}
               max={HEADER_H_MAX}
@@ -391,10 +397,11 @@ export function DisplayForm() {
           </div>
           <div>
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">页脚间距</span>
+              <label htmlFor="footer-py" className="text-sm font-medium">页脚间距</label>
               <span className="text-sm tabular-nums text-muted">{footerPy}px</span>
             </div>
             <input
+              id="footer-py"
               type="range"
               min={FOOTER_PY_MIN}
               max={FOOTER_PY_MAX}
@@ -410,7 +417,7 @@ export function DisplayForm() {
       {/* 远山水墨强度 */}
       <div>
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium">远山水墨强度</span>
+          <label htmlFor="wave-intensity" className="text-sm font-medium">远山水墨强度</label>
           <span className="text-sm tabular-nums text-muted">{Math.round(waveIntensity * 100)}%</span>
         </div>
         <input
@@ -449,6 +456,9 @@ export function DisplayForm() {
           <span className="block text-sm font-medium">减少动效</span>
           <span className="mt-0.5 block text-xs text-muted">
             关闭全站入场与滚动动画，减少视觉刺激
+          </span>
+          <span className="mt-1 block text-xs text-muted">
+            系统已开启「减少动效」时，此项自动开启且无法关闭。
           </span>
         </span>
         <input

@@ -1,5 +1,5 @@
 name: Bug 报告 / Bug report
-description: 运行时错误、页面显示异常或性能问题；提交前请先搜索已有 Issue
+description: 运行时错误、页面显示异常或性能问题；提交前请先搜索已有 Issue / Runtime errors, broken pages or performance issues; search existing issues first
 title: "[Bug] "
 labels: [bug]
 body:

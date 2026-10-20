@@ -23,23 +23,46 @@ export function EngagementBar({
   title: string;
 }) {
   const [data, setData] = useState<Engagement | null>(null);
+  const [failed, setFailed] = useState(false);
+  const [retry, setRetry] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
     void fetch(`/api/posts/${encodeURIComponent(slug)}/engagement`)
       .then((r) => (r.ok ? (r.json() as Promise<Engagement>) : null))
       .then((d) => {
-        if (!cancelled && d) setData(d);
+        if (cancelled) return;
+        if (!d) {
+          setFailed(true);
+          return;
+        }
+        setData(d);
       })
-      .catch(() => {});
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
     return () => {
       cancelled = true;
     };
-  }, [slug]);
+  }, [slug, retry]);
 
   return (
     <div className="mt-12 flex items-center justify-center gap-3">
-      {data ? (
+      {failed ? (
+        <p role="alert" className="text-sm text-muted">
+          互动状态加载失败。
+          <button
+            type="button"
+            onClick={() => {
+              setFailed(false);
+              setRetry((value) => value + 1);
+            }}
+            className="ml-1 text-accent underline"
+          >
+            重试
+          </button>
+        </p>
+      ) : data ? (
         <>
           <LikeButton
             postId={postId}

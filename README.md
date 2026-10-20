@@ -90,6 +90,7 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 - `/blog/[slug]` 文章详情（ISR）：TOC、阅读进度、点赞 / 收藏 / 分享、上下篇与系列导航、评论区、相关阅读。浏览量和阅读记录由客户端上报
 - `/blog/category/[slug]`、`/blog/tag/[slug]`、`/blog/series/[slug]`、`/blog/archive` 分类 / 标签 / 系列 / 归档
 - `/bookmarks` 我的收藏、`/notifications` 站内通知中心、`/settings` 个人资料与显示偏好
+- `/reading` 最近阅读：阅读进度只存在本机浏览器
 - `/social`、`/tools`、`/about`、`/privacy`、`/terms` 内容与信息页
 - `/feed.xml`（全站）及 `/feed.xml/category|tag|series/[slug]`、`/sitemap.xml`、`/robots.txt`、`/opengraph-image`
 
@@ -100,6 +101,7 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 
 - `/register`：支持提交申请和邀请码注册。两种方式都会先发送邮箱验证链接，验证时设置密码；验证通过后进入审核，审核通过后用该密码登录。同一邮箱的验证邮件每天最多发送 5 封
 - `/login`：登录
+- `/verify-email`：从验证邮件链接进入，验证邮箱并设置登录密码；失败时区分链接过期、邀请码失效、已有账号和可重试故障
 
 </details>
 
@@ -128,6 +130,8 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 │   ├── admin/           后台组件，含 charts/（SVG 图表）
 │   ├── layout/          Header / Footer / Sidebar / 通知铃
 │   ├── blog/            文章卡片、列表、目录
+│   ├── home/            首页：Hero、动效背景、诗句、社交链接
+│   ├── about/           关于页时间线
 │   ├── comments/        评论区
 │   ├── notifications/   通知中心
 │   └── settings/        个人设置
@@ -135,7 +139,9 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 │                        reading、invites、notifications、stats、daily-stats、
 │                        validation、rate-limit、permissions、mail、markdown …
 ├── prisma/              schema.prisma + migrations/ + seed.ts
-├── scripts/             一次性脚本（回填、自测）
+├── scripts/             一次性脚本（回填、自测）与构建前置步骤
+├── types/               全局类型扩展
+├── fonts/               本地字体
 └── public/              静态资源；未配置 Blob 时图片写入 public/uploads
 ```
 
@@ -175,7 +181,7 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 **Vercel**
 
 1. 创建 PostgreSQL（如 [Neon](https://neon.tech)），并将 `DATABASE_URL` 设为 pooled 连接串。
-2. 导入本仓库。构建命令使用 `vercel-build`，即 `prisma migrate deploy && next build`。
+2. 导入本仓库。构建命令使用 `vercel-build`：先跑 `scripts/predeploy.mjs`（仅生产环境应用数据库迁移），再执行 `next build`。预览构建不会执行迁移，但静态生成仍可能读取数据库，请为预览环境配置隔离的数据库。
 3. 配置 `AUTH_SECRET`，并将 `NEXT_PUBLIC_SITE_URL` 设为正式域名。
 4. 运行种子脚本前配置 `ADMIN_EMAIL` 和 `ADMIN_PASSWORD`。
 5. 生产环境需要上传封面或头像时，创建 Blob Store。Vercel 会注入 `BLOB_READ_WRITE_TOKEN`。

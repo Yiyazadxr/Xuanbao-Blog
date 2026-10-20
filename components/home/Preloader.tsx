@@ -11,16 +11,26 @@ export function Preloader() {
 
   useEffect(() => {
     let rafId: number;
+    // 站点数据被禁用时 sessionStorage 会抛错；按「未跳过」处理，不能让首页被遮罩永久盖住。
+    let shown = false;
+    try {
+      shown = Boolean(sessionStorage.getItem("preloader-shown"));
+    } catch {
+      shown = false;
+    }
     const skip =
-      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
-      sessionStorage.getItem("preloader-shown");
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches || shown;
 
     if (skip) {
       rafId = requestAnimationFrame(() => setPhase("done"));
       return () => cancelAnimationFrame(rafId);
     }
 
-    sessionStorage.setItem("preloader-shown", "1");
+    try {
+      sessionStorage.setItem("preloader-shown", "1");
+    } catch {
+      /* 无法记录已播放：本次会话仍会播放 */
+    }
     const DURATION = 900;
     const start = performance.now();
     const tick = (now: number) => {

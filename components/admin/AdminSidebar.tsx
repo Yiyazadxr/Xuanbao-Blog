@@ -45,7 +45,7 @@ const ADMIN_LINKS: AdminLink[] = [
     label: "用户管理",
     href: "/admin/users",
     icon: "ph:users-bold",
-    permissions: [PERMISSIONS.MANAGE_USERS],
+    permissions: [PERMISSIONS.MANAGE_USERS, PERMISSIONS.MUTE_USERS],
   },
   {
     label: "权限管理",

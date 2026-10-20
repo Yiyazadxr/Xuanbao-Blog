@@ -26,8 +26,9 @@ export function DisplaySync() {
   useEffect(() => {
     if (status !== "authenticated" || !isSyncEnabled()) return;
     let cancelled = false;
-    getDisplayPreferences().then((prefs) => {
-      if (cancelled || !prefs) return;
+    getDisplayPreferences()
+      .then((prefs) => {
+        if (cancelled || !prefs) return;
       writeFontScale(prefs.fontScale);
       writeSpacingScale(prefs.spacingScale);
       writeDensity(prefs.density);
@@ -46,7 +47,9 @@ export function DisplaySync() {
         prefs.footerPy ?? undefined,
         prefs.spacingScale
       );
-    });
+      })
+      // 拉取失败时静默回退到本地偏好。
+      .catch(() => {});
     return () => {
       cancelled = true;
     };

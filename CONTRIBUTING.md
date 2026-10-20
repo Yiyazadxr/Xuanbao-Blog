@@ -36,7 +36,14 @@ pnpm check    # lint + typecheck + vitest，与 CI 跑的是同一套
 
 改动 `prisma/schema.prisma` 后必须执行 `pnpm prisma generate`（客户端输出到 `lib/generated/prisma`）；迁移用 `pnpm prisma migrate dev --name X`。
 
-提交信息采用 Conventional Commits，例如 `fix: 修复登录限流边界`。
+提交信息采用 Conventional Commits，标题为「类型: 标题 - 要点摘要（用 + 连接）」，正文用 `- ` 列表，例如：
+
+```
+fix: 修复登录限流边界 - 计数溢出 + 窗口未重置
+
+- 修正固定窗口计数
+- 补充窗口到期重置的用例
+```
 
 ### 报告问题
 
@@ -85,7 +92,14 @@ pnpm check    # lint + typecheck + vitest, the same set CI runs
 
 After changing `prisma/schema.prisma` you must run `pnpm prisma generate` (the client is generated into `lib/generated/prisma`); migrations use `pnpm prisma migrate dev --name X`.
 
-Commit messages follow Conventional Commits, e.g. `fix: 修复登录限流边界`.
+Commit messages follow Conventional Commits: `type: summary - detail one + detail two`, with `- ` bullet points in the body, e.g.
+
+```
+fix: 修复登录限流边界 - 计数溢出 + 窗口未重置
+
+- 修正固定窗口计数
+- 补充窗口到期重置的用例
+```
 
 ### Reporting issues
 

@@ -21,6 +21,7 @@ export function Stagger({
   return (
     <m.div
       className={className}
+      data-reveal=""
       variants={staggerContainer({ staggerChildren, delayChildren })}
       initial={reduceMotion ? false : "hidden"}
       whileInView="visible"
@@ -41,7 +42,7 @@ export function StaggerItem({
   variants?: Variants;
 }) {
   return (
-    <m.div className={className} variants={variants}>
+    <m.div className={className} data-reveal="" variants={variants}>
       {children}
     </m.div>
   );

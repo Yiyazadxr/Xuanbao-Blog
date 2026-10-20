@@ -2,6 +2,7 @@
 
 import { useId, useState } from "react";
 
+import { EmptyState } from "@/components/ui/EmptyState";
 import { TREND_SERIES, type TrendSeriesKey } from "@/lib/chart";
 import type { TrendPoint } from "@/lib/stats";
 import { formatCount } from "@/lib/utils";
@@ -202,9 +203,11 @@ export function TrendChart({ data }: { data: TrendPoint[] }) {
             )}
 
             {isEmpty && (
-              <p className="absolute inset-0 flex items-center justify-center text-sm text-muted">
-                暂无数据
-              </p>
+              <EmptyState
+                size="sm"
+                title="暂无数据"
+                className="absolute inset-0 justify-center py-0"
+              />
             )}
           </div>
 

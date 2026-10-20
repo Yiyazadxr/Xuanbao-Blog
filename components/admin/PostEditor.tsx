@@ -5,11 +5,13 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useEffect, useRef, useState, useTransition } from "react";
+import ReactMarkdown from "react-markdown";
 import { savePost, uploadImage } from "@/app/(admin)/admin/posts/actions";
 import type { PostConflict } from "@/lib/post-page-types";
 import { errorCls, inputCls, labelCls, primaryBtnCls } from "@/components/ui/form-styles";
 import { EXCERPT_MAX } from "@/lib/validation";
 import { slugify } from "@/lib/slug";
+import { MARKDOWN_REHYPE_PLUGINS, MARKDOWN_REMARK_PLUGINS } from "@/lib/markdown";
 import "@uiw/react-md-editor/markdown-editor.css";
 import "@uiw/react-markdown-preview/markdown.css";
 
@@ -318,7 +320,8 @@ export function PostEditor({
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 onChange={handleCoverFile}
                 disabled={uploading}
-                className="hidden"
+                // sr-only 保留可聚焦性，键盘用户也能打开文件选择框。
+                className="sr-only"
               />
             </label>
             {coverImage && (
@@ -389,7 +392,26 @@ export function PostEditor({
 
       <div data-color-mode={resolvedTheme === "dark" ? "dark" : "light"}>
         <label className={labelCls}>正文（Markdown）</label>
-        <MDEditor value={content} onChange={(v) => setContent(v ?? "")} height={420} />
+        {/* 编辑器内置预览会渲染原始 HTML（rehype-raw），在管理员会话里可执行脚本；
+            这里关闭它，预览改用下方与线上一致的安全渲染链。 */}
+        <MDEditor
+          value={content}
+          onChange={(v) => setContent(v ?? "")}
+          height={420}
+          preview="edit"
+          extraCommands={[]}
+        />
+        <div className="mt-3 rounded-xl border border-border p-4">
+          <p className="mb-2 text-xs text-muted">预览（与线上一致）</p>
+          <div className="prose prose-stone max-w-none dark:prose-invert prose-headings:scroll-mt-24">
+            <ReactMarkdown
+              remarkPlugins={MARKDOWN_REMARK_PLUGINS}
+              rehypePlugins={MARKDOWN_REHYPE_PLUGINS}
+            >
+              {content}
+            </ReactMarkdown>
+          </div>
+        </div>
       </div>
 
       <div className="flex flex-wrap gap-5">

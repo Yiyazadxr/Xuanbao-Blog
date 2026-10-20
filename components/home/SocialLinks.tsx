@@ -5,6 +5,9 @@ import { CONTACT } from "@/lib/constants";
 import { useEffect, useRef, useState } from "react";
 
 // 社交图标行（客户端）：RSS 点击跳转 + 复制链接；复制后短暂提示
+// 邮箱与 EmailCard 保持一致：只在点击时在客户端拼接，明文不进入 SSR HTML。
+const [localPart, domain] = CONTACT.email.split("@");
+
 export function SocialLinks() {
   const [copied, setCopied] = useState(false);
   const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
@@ -39,13 +42,14 @@ export function SocialLinks() {
       >
         <Icon icon="ph:github-logo-bold" width={18} height={18} aria-hidden />
       </a>
-      <a
-        href={`mailto:${CONTACT.email}`}
+      <button
+        type="button"
+        onClick={() => (window.location.href = `mailto:${localPart}@${domain}`)}
         aria-label="Email"
-        className="inline-flex size-9 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-foreground/5 hover:text-foreground"
+        className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-foreground/5 hover:text-foreground"
       >
         <Icon icon="ph:envelope-bold" width={18} height={18} aria-hidden />
-      </a>
+      </button>
       <a
         href="/feed.xml"
         onClick={handleRssClick}

@@ -114,39 +114,50 @@ function clampNum(v: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, v));
 }
 
+// 读取统一走安全取值：浏览器禁用站点数据时 localStorage 会抛 SecurityError，
+// 不能让一次读取失败拖垮整组偏好恢复。
+function readLocal(key: string): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 export function readFontScale(): number {
   if (typeof window === "undefined") return FONT_SCALE_DEFAULT;
-  const v = Number(localStorage.getItem(LS_FONT_SCALE));
+  const v = Number(readLocal(LS_FONT_SCALE));
   return v >= FONT_SCALE_MIN && v <= FONT_SCALE_MAX ? v : FONT_SCALE_DEFAULT;
 }
 
 export function readSpacingScale(): number {
   if (typeof window === "undefined") return SPACING_SCALE_DEFAULT;
-  const v = Number(localStorage.getItem(LS_SPACING));
+  const v = Number(readLocal(LS_SPACING));
   return isSpacingScale(v) ? v : SPACING_SCALE_DEFAULT;
 }
 
 export function readDensity(): Density {
   if (typeof window === "undefined") return DENSITY_DEFAULT;
-  const d = localStorage.getItem(LS_DENSITY);
+  const d = readLocal(LS_DENSITY);
   return d === "compact" || d === "comfortable" || d === "custom" ? d : DENSITY_DEFAULT;
 }
 
 export function readHeaderH(): number {
   if (typeof window === "undefined") return HEADER_H_DEFAULT;
-  const v = Number(localStorage.getItem(LS_HEADER_H));
+  const v = Number(readLocal(LS_HEADER_H));
   return Number.isFinite(v) ? clampNum(v, HEADER_H_MIN, HEADER_H_MAX) : HEADER_H_DEFAULT;
 }
 
 export function readFooterPy(): number {
   if (typeof window === "undefined") return FOOTER_PY_DEFAULT;
-  const v = Number(localStorage.getItem(LS_FOOTER_PY));
+  const v = Number(readLocal(LS_FOOTER_PY));
   return Number.isFinite(v) ? clampNum(v, FOOTER_PY_MIN, FOOTER_PY_MAX) : FOOTER_PY_DEFAULT;
 }
 
 export function isSyncEnabled(): boolean {
   if (typeof window === "undefined") return false;
-  return localStorage.getItem(LS_SYNC) === "1";
+  return readLocal(LS_SYNC) === "1";
 }
 
 export function writeFontScale(scale: number): void {
@@ -191,7 +202,7 @@ export function writeFooterPy(px: number): void {
 
 export function readWaveIntensity(): number {
   if (typeof window === "undefined") return WAVE_INTENSITY_DEFAULT;
-  const v = Number(localStorage.getItem(LS_WAVE_INTENSITY));
+  const v = Number(readLocal(LS_WAVE_INTENSITY));
   return Number.isFinite(v) && v >= WAVE_INTENSITY_MIN && v <= WAVE_INTENSITY_MAX
     ? v
     : WAVE_INTENSITY_DEFAULT;
@@ -210,7 +221,7 @@ export function writeWaveIntensity(v: number): void {
 
 export function readInkEnabled(): boolean {
   if (typeof window === "undefined") return INK_ENABLED_DEFAULT;
-  return localStorage.getItem(LS_INK_ENABLED) !== "0";
+  return readLocal(LS_INK_ENABLED) !== "0";
 }
 
 export function writeInkEnabled(enabled: boolean): void {
@@ -226,7 +237,7 @@ export function writeInkEnabled(enabled: boolean): void {
 
 export function readProseLeading(): number {
   if (typeof window === "undefined") return PROSE_LEADING_DEFAULT;
-  const v = Number(localStorage.getItem(LS_PROSE_LEADING));
+  const v = Number(readLocal(LS_PROSE_LEADING));
   return isProseLeading(v) ? v : PROSE_LEADING_DEFAULT;
 }
 
@@ -243,7 +254,7 @@ export function writeProseLeading(v: number): void {
 
 export function readSmoothScroll(): boolean {
   if (typeof window === "undefined") return SMOOTH_SCROLL_DEFAULT;
-  return localStorage.getItem(LS_SMOOTH_SCROLL) !== "0";
+  return readLocal(LS_SMOOTH_SCROLL) !== "0";
 }
 
 export function writeSmoothScroll(enabled: boolean): void {
@@ -259,7 +270,7 @@ export function writeSmoothScroll(enabled: boolean): void {
 
 export function readReadingProgress(): boolean {
   if (typeof window === "undefined") return READING_PROGRESS_DEFAULT;
-  return localStorage.getItem(LS_READING_PROGRESS) !== "0";
+  return readLocal(LS_READING_PROGRESS) !== "0";
 }
 
 export function writeReadingProgress(enabled: boolean): void {

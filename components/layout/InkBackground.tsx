@@ -51,7 +51,8 @@ export function InkBackground() {
   useEffect(() => {
     const html = document.documentElement;
     const sync = () => setEnabled(html.getAttribute("data-ink") !== "off");
-    sync();
+    // effect 体内不直接同步 setState，改为微任务后置。
+    void Promise.resolve().then(sync);
     const obs = new MutationObserver(sync);
     obs.observe(html, { attributes: true, attributeFilter: ["data-ink"] });
     return () => obs.disconnect();

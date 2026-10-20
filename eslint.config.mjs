@@ -14,6 +14,24 @@ const eslintConfig = defineConfig([
       ],
     },
   },
+  // 客户端组件禁止引入服务端模块：这些模块依赖 Prisma 客户端或 Node API，
+  // 被打进浏览器包时类型检查不报错，只在运行时炸。
+  {
+    files: ["components/**/*.{ts,tsx}"],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["@/lib/prisma", "@/lib/permissions-server", "@/lib/rate-limit", "@/lib/mail"],
+              message: "客户端组件不能引入服务端模块（Prisma / 权限查询 / 限流 / 邮件）。",
+            },
+          ],
+        },
+      ],
+    },
+  },
   globalIgnores([
     // eslint-config-next 默认忽略项
     ".next/**",

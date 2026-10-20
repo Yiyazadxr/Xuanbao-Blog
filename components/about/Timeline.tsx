@@ -91,6 +91,7 @@ export function Timeline({ items }: { items: readonly TimelineEntry[] }) {
       <m.ol
         aria-label="建站时间线"
         className="relative space-y-6 pl-8"
+        data-reveal=""
         variants={staggerContainer({ staggerChildren: 0.14, delayChildren: 0.08 })}
         initial={reduceMotion ? false : "hidden"}
         whileInView="visible"
@@ -122,6 +123,7 @@ export function Timeline({ items }: { items: readonly TimelineEntry[] }) {
             </span>
             <m.div
               variants={contentVariants}
+              data-reveal=""
               className="-mr-3 rounded-xl py-2 pr-3 transition-colors duration-300 group-hover:bg-surface"
             >
               <time

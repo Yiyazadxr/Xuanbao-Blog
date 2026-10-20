@@ -7,11 +7,18 @@ const KEY = "xr-reduce-motion";
 
 const listeners = new Set<() => void>();
 let cache: boolean | null = null;
+let mediaQuery: MediaQueryList | null = null;
 
 function read(): boolean {
   if (typeof window === "undefined") return false;
   try {
-    return localStorage.getItem(KEY) === "1";
+    if (localStorage.getItem(KEY) === "1") return true;
+  } catch {
+    /* 忽略 */
+  }
+  // 系统级「减少动态效果」同样生效，不只依赖站内开关。
+  try {
+    return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
   } catch {
     return false;
   }
@@ -19,9 +26,27 @@ function read(): boolean {
 
 function subscribe(cb: () => void): () => void {
   listeners.add(cb);
+  if (listeners.size === 1) {
+    cache = read();
+    try {
+      mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+      mediaQuery.addEventListener("change", onSystemPreferenceChange);
+    } catch {
+      mediaQuery = null;
+    }
+  }
   return () => {
     listeners.delete(cb);
+    if (listeners.size === 0) {
+      mediaQuery?.removeEventListener("change", onSystemPreferenceChange);
+      mediaQuery = null;
+    }
   };
+}
+
+function onSystemPreferenceChange(): void {
+  cache = read();
+  listeners.forEach((listener) => listener());
 }
 
 function getSnapshot(): boolean {
@@ -41,6 +66,7 @@ export function setReducedMotion(on: boolean): void {
   } catch {
     /* 忽略 */
   }
-  cache = on;
+  // 系统级减少动效始终优先，关闭站内开关不会覆盖系统无障碍偏好。
+  cache = read();
   listeners.forEach((l) => l());
 }
