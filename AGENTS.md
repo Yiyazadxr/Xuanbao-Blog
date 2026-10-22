@@ -62,7 +62,7 @@ This version has breaking changes — APIs, conventions, and file structure may 
 - 首页问候与 `SITE.description` 是固定品牌文案，非明确要求不要改。
 - 注释写事实与原因，控制在三行内；不写「本轮 / 本次 / 原先 / 旧实现 / 用户反馈」这类变更日志，也不重复代码已经表达的内容。技术术语保持精确。
 - 诗词（`lib/poems.ts`）、节日文案（`lib/festivals.ts`）与法务正文（`lib/legal.ts`）属于内容，不做文案润色。
-- 站点功能或文案变更时，同步 `README.md` 与 `README.en.md`；社区文件（`CONTRIBUTING.md`、`CODE_OF_CONDUCT.md`、Issue 模板）保持中英双语镜像。
+- 站点功能或文案变更时，同步 `README.md` 与 `README.en.md`；社区文件保持同仓口径：`CONTRIBUTING.md` 与 `SECURITY.md` 中英双语同文件，`CODE_OF_CONDUCT.md` 为 Contributor Covenant 2.1 英文原文 + 顶部中文摘要，Issue 表单双标签。
 
 ## 提交规范
 

@@ -14,7 +14,7 @@ A Chinese-language personal blog system: Markdown authoring, invite-only registr
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com)
 
-[Live site](https://xuanbao.vercel.app) · [Issues](https://github.com/Yiyazadxr/Xuanbao-blog/issues) · [Contributing](./CONTRIBUTING.md) · [Code of Conduct](./CODE_OF_CONDUCT.md) · [License](#license)
+[Live site](https://xuanbao.vercel.app) · [Issues](https://github.com/Yiyazadxr/Xuanbao-blog/issues) · [Contributing](./CONTRIBUTING.md) · [Code of Conduct](./CODE_OF_CONDUCT.md) · [Security](./SECURITY.md) · [License](#license)
 
 </div>
 

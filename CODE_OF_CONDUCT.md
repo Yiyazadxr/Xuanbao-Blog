@@ -1,25 +1,86 @@
-# 社区行为准则 · Code of Conduct
 
-本准则适用于本仓库的 Issue、Pull Request、Discussions 以及与之相关的其他交流场合。参与交流即表示接受以下约定。
+# Contributor Covenant Code of Conduct
 
-## 中文
+> **中文摘要** — 本仓库遵循 Contributor Covenant 2.1。参与即表示同意：尊重不同背景与经验；只讨论工作，不攻击个人；不发布他人的隐私信息与凭据；不骚扰、不歧视、不威胁。举报请发邮件至 **412110785@qq.com**，或使用仓库 **Security → Report a vulnerability** 私下提交，举报人身份会保密。维护者可依次采取：私下提醒 → 警告 → 临时封禁 → 永久封禁。以下英文原文为正式条款，与摘要冲突时以英文为准。
 
-- 就事论事：讨论代码、文档与内容本身，不评价个人。
-- 尊重差异：不因人种、性别、性取向、宗教、国籍或经验水平攻击、贬低他人。
-- 不做骚扰：不接受侮辱、歧视、威胁、恶意刷屏与人身攻击。
-- 尊重版权与来源：引用与使用内容时遵守 [LICENSE](./LICENSE) 与 [NOTICE](./NOTICE)。
-- 保护隐私：不要在公开讨论中粘贴他人的个人信息，或密码、数据库连接串、Cookie、Token 等任何凭据。
+## Our Pledge
 
-**举报与处理**：遇到违规行为请邮件联系 412110785@qq.com。举报私下处理，不公开举报人身份。维护者视情节采取提醒、警告、删除内容或临时 / 永久封禁；对处理结果有异议可邮件复议。
+We as members, contributors, and leaders pledge to make participation in our community a harassment-free experience for everyone, regardless of age, body size, visible or invisible disability, ethnicity, sex characteristics, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, caste, color, religion, or sexual identity and orientation.
 
-## English
+We pledge to act and interact in ways that contribute to an open, welcoming, diverse, inclusive, and healthy community.
 
-This code applies to issues, pull requests, discussions and other spaces connected to this repository. By taking part, you agree to the following.
+## Our Standards
 
-- Discuss the work, not the person.
-- Be respectful of different backgrounds and experience levels; no attacks over race, gender, sexual orientation, religion or nationality.
-- No harassment: insults, discrimination, threats, sustained disruption and personal attacks are not acceptable.
-- Respect copyright and attribution as described in [LICENSE](./LICENSE) and [NOTICE](./NOTICE).
-- Protect privacy: do not post other people's personal information, or any credentials such as passwords, database connection strings, cookies or tokens, in public discussions.
+Examples of behavior that contributes to a positive environment for our community include:
 
-**Reporting**: email 412110785@qq.com. Reports are handled privately and the reporter's identity is not disclosed. Depending on severity, maintainers may issue a reminder or a warning, remove content, or temporarily / permanently ban accounts. If you disagree with a decision, reply by email and it will be reviewed again.
+* Demonstrating empathy and kindness toward other people
+* Being respectful of differing opinions, viewpoints, and experiences
+* Giving and gracefully accepting constructive feedback
+* Accepting responsibility and apologizing to those affected by our mistakes, and learning from the experience
+* Focusing on what is best not just for us as individuals, but for the overall community
+
+Examples of unacceptable behavior include:
+
+* The use of sexualized language or imagery, and sexual attention or advances of any kind
+* Trolling, insulting or derogatory comments, and personal or political attacks
+* Public or private harassment
+* Publishing others' private information, such as a physical or email address, without their explicit permission
+* Other conduct which could reasonably be considered inappropriate in a professional setting
+
+## Enforcement Responsibilities
+
+Community leaders are responsible for clarifying and enforcing our standards of acceptable behavior and will take appropriate and fair corrective action in response to any behavior that they deem inappropriate, threatening, offensive, or harmful.
+
+Community leaders have the right and responsibility to remove, edit, or reject comments, commits, code, wiki edits, issues, and other contributions that are not aligned to this Code of Conduct, and will communicate reasons for moderation decisions when appropriate.
+
+## Scope
+
+This Code of Conduct applies within all community spaces, and also applies when an individual is officially representing the community in public spaces. Examples of representing our community include using an official e-mail address, posting via an official social media account, or acting as an appointed representative at an online or offline event.
+
+## Enforcement
+
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the community leaders responsible for enforcement at **412110785@qq.com** or through GitHub (use a private Security Advisory). All complaints will be reviewed and investigated promptly and fairly.
+
+All community leaders are obligated to respect the privacy and security of the reporter of any incident.
+
+## Enforcement Guidelines
+
+Community leaders will follow these Community Impact Guidelines in determining the consequences for any action they deem in violation of this Code of Conduct:
+
+### 1. Correction
+
+**Community Impact**: Use of inappropriate language or other behavior deemed unprofessional or unwelcome in the community.
+
+**Consequence**: A private, written warning from community leaders, providing clarity around the nature of the violation and an explanation of why the behavior was inappropriate. A public apology may be requested.
+
+### 2. Warning
+
+**Community Impact**: A violation through a single incident or series of actions.
+
+**Consequence**: A warning with consequences for continued behavior. No interaction with the people involved, including unsolicited interaction with those enforcing the Code of Conduct, for a specified period of time. This includes avoiding interactions in community spaces as well as external channels like social media. Violating these terms may lead to a temporary or permanent ban.
+
+### 3. Temporary Ban
+
+**Community Impact**: A serious violation of community standards, including sustained inappropriate behavior.
+
+**Consequence**: A temporary ban from any sort of interaction or public communication with the community for a specified period of time. No public or private interaction with the people involved, including unsolicited interaction with those enforcing the Code of Conduct, is allowed during this period. Violating these terms may lead to a permanent ban.
+
+### 4. Permanent Ban
+
+**Community Impact**: Demonstrating a pattern of violation of community standards, including sustained inappropriate behavior, harassment of an individual, or aggression toward or disparagement of classes of individuals.
+
+**Consequence**: A permanent ban from any sort of public interaction within the community.
+
+## Attribution
+
+This Code of Conduct is adapted from the [Contributor Covenant][homepage], version 2.1, available at [https://www.contributor-covenant.org/version/2/1/code_of_conduct.html][v2.1].
+
+Community Impact Guidelines were inspired by [Mozilla's code of conduct enforcement ladder][Mozilla CoC].
+
+For answers to common questions about this code of conduct, see the FAQ at [https://www.contributor-covenant.org/faq][FAQ]. Translations are available at [https://www.contributor-covenant.org/translations][translations].
+
+[homepage]: https://www.contributor-covenant.org
+[v2.1]: https://www.contributor-covenant.org/version/2/1/code_of_conduct.html
+[Mozilla CoC]: https://github.com/mozilla/diversity
+[FAQ]: https://www.contributor-covenant.org/faq
+[translations]: https://www.contributor-covenant.org/translations

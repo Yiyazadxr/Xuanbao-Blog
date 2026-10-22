@@ -14,7 +14,7 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-4169E1?style=flat-square&logo=postgresql&logoColor=white)](https://www.postgresql.org)
 [![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-000000?style=flat-square&logo=vercel&logoColor=white)](https://vercel.com)
 
-[在线站点](https://xuanbao.vercel.app) · [提交 Issue](https://github.com/Yiyazadxr/Xuanbao-blog/issues) · [贡献指南](./CONTRIBUTING.md) · [行为准则](./CODE_OF_CONDUCT.md) · [许可](#许可)
+[在线站点](https://xuanbao.vercel.app) · [提交 Issue](https://github.com/Yiyazadxr/Xuanbao-blog/issues) · [贡献指南](./CONTRIBUTING.md) · [行为准则](./CODE_OF_CONDUCT.md) · [安全策略](./SECURITY.md) · [许可](#许可)
 
 </div>
 
