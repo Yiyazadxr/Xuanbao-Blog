@@ -109,7 +109,11 @@ export function NotificationBell() {
     setPending(true);
     setError(null);
     try {
-      await markNotificationRead(item.id);
+      const readResult = await markNotificationRead(item.id);
+      if (!readResult.ok) {
+        setError(readResult.error ?? "标记已读失败，请稍后重试");
+        return;
+      }
       setItems((prev) => prev.map((n) => (n.id === item.id ? { ...n, read: true } : n)));
       setUnread((prev) => ({
         total: Math.max(0, prev.total - 1),
@@ -134,7 +138,11 @@ export function NotificationBell() {
     setPending(true);
     setError(null);
     try {
-      await markAllNotificationsRead();
+      const allResult = await markAllNotificationsRead();
+      if (!allResult.ok) {
+        setError(allResult.error ?? "操作失败，请稍后重试");
+        return;
+      }
       setItems((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnread(EMPTY_SUMMARY);
     } catch {
@@ -153,7 +161,11 @@ export function NotificationBell() {
     setPending(true);
     setError(null);
     try {
-      await deleteNotification(id);
+      const deleteResult = await deleteNotification(id);
+      if (!deleteResult.ok) {
+        setError(deleteResult.error ?? "删除失败，请稍后重试");
+        return;
+      }
       setItems((prev) => prev.filter((n) => n.id !== id));
       if (target && !target.read) {
         setUnread((prev) => ({

@@ -13,7 +13,6 @@ import { EXCERPT_MAX } from "@/lib/validation";
 import { slugify } from "@/lib/slug";
 import { MARKDOWN_REHYPE_PLUGINS, MARKDOWN_REMARK_PLUGINS } from "@/lib/markdown";
 import "@uiw/react-md-editor/markdown-editor.css";
-import "@uiw/react-markdown-preview/markdown.css";
 
 // Markdown 编辑器体积大且依赖浏览器 API，动态引入并关闭 SSR
 const MDEditor = dynamic(() => import("@uiw/react-md-editor"), {

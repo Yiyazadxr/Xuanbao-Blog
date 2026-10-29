@@ -7,7 +7,7 @@ import { getFreshUser } from "@/lib/auth";
 import { verifyHCaptcha } from "@/lib/hcaptcha";
 import { deleteImage, saveImage } from "@/lib/image-storage";
 import type { AllowedImageType } from "@/lib/image-type";
-import { rateLimit } from "@/lib/rate-limit";
+import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { changePasswordSchema, parseInput, updateNameSchema } from "@/lib/validation";
 
@@ -20,6 +20,12 @@ const MAX_AVATAR_SIZE = 2 * 1024 * 1024;
 export async function updateAvatar(_prev: SettingsState, formData: FormData): Promise<SettingsState> {
   const user = await getFreshUser();
   if (!user) return { ok: false, error: "请先登录" };
+
+  const ip = await getClientIp();
+  const captchaCheck = await rateLimit.checkAndHit("captcha", ip, 30, 10 * 60 * 1000);
+  if (captchaCheck.blocked) {
+    return { ok: false, error: `操作过于频繁，请 ${captchaCheck.retryAfterSec} 秒后再试` };
+  }
 
   if (!(await verifyHCaptcha(String(formData.get("captcha") ?? "")))) {
     return { ok: false, error: "人机验证未通过，请重新验证" };
@@ -85,6 +91,12 @@ export async function updateProfile(
   const user = await getFreshUser();
   if (!user) return { ok: false, error: "请先登录" };
 
+  const ip = await getClientIp();
+  const captchaCheck = await rateLimit.checkAndHit("captcha", ip, 30, 10 * 60 * 1000);
+  if (captchaCheck.blocked) {
+    return { ok: false, error: `操作过于频繁，请 ${captchaCheck.retryAfterSec} 秒后再试` };
+  }
+
   if (!(await verifyHCaptcha(String(formData.get("captcha") ?? "")))) {
     return { ok: false, error: "人机验证未通过，请重新验证" };
   }
@@ -108,6 +120,12 @@ export async function changePassword(
 ): Promise<SettingsState> {
   const user = await getFreshUser();
   if (!user) return { ok: false, error: "请先登录" };
+
+  const ip = await getClientIp();
+  const captchaCheck = await rateLimit.checkAndHit("captcha", ip, 30, 10 * 60 * 1000);
+  if (captchaCheck.blocked) {
+    return { ok: false, error: `操作过于频繁，请 ${captchaCheck.retryAfterSec} 秒后再试` };
+  }
 
   if (!(await verifyHCaptcha(String(formData.get("captcha") ?? "")))) {
     return { ok: false, error: "人机验证未通过，请重新验证" };

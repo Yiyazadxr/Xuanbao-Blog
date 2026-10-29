@@ -275,7 +275,7 @@ model Notification {
   read      Boolean  @default(false)
   createdAt DateTime @default(now())
 
-  // lastMergedAt 用于聚合窗口和排序；createdAt 仅用于 7 天清理。
+  // lastMergedAt 用于聚合去重与保留判定：createdAt 保留首次创建时间；7 天清理与 200 条上限均以 lastMergedAt 为准
   lastMergedAt DateTime @default(now())
 
   // 点赞通知聚合：

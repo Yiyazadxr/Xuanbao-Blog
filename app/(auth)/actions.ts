@@ -21,6 +21,16 @@ export async function loginAction(
   });
   if (!parsed.data) return { ok: false, error: parsed.error ?? "参数不合法" };
   const { email } = parsed.data;
+  const ip = await getClientIp();
+  const ipBlocked = await rateLimit.isBlocked("login-ip", ip, 40);
+  if (ipBlocked.blocked) {
+    return { ok: false, error: `登录过于频繁，请 ${ipBlocked.retryAfterSec} 秒后再试` };
+  }
+  const emailBlocked = await rateLimit.isBlocked("login-email", parsed.data.email, 10);
+  if (emailBlocked.blocked) {
+    return { ok: false, error: `登录过于频繁，请 ${emailBlocked.retryAfterSec} 秒后再试` };
+  }
+
 
   try {
     // 客户端整页跳转以重新挂载 SessionProvider。

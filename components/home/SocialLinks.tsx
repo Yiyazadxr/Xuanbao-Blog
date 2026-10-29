@@ -36,7 +36,7 @@ export function SocialLinks() {
       <a
         href={CONTACT.github}
         target="_blank"
-        rel="noreferrer"
+        rel="noopener noreferrer"
         aria-label="GitHub"
         className="inline-flex size-9 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-foreground/5 hover:text-foreground"
       >

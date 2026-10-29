@@ -3,7 +3,7 @@ const mocks = vi.hoisted(() => ({ user: vi.fn(), findUnique: vi.fn(), updateMany
 vi.mock("@/lib/auth", () => ({ getFreshUser: mocks.user }));
 vi.mock("@/lib/prisma", () => ({ prisma: { user: { findUnique: mocks.findUnique, updateMany: mocks.updateMany } } }));
 vi.mock("@/lib/hcaptcha", () => ({ verifyHCaptcha: async () => true }));
-vi.mock("@/lib/rate-limit", () => ({ rateLimit: { isBlocked: async () => ({ blocked: false }), reset: mocks.reset } }));
+vi.mock("@/lib/rate-limit", () => ({ getClientIp: async () => "127.0.0.1", rateLimit: { isBlocked: async () => ({ blocked: false }), checkAndHit: async () => ({ blocked: false, retryAfterSec: 0 }), reset: mocks.reset } }));
 vi.mock("@/lib/image-storage", () => ({ deleteImage: vi.fn(), saveImage: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 vi.mock("bcryptjs", () => ({ default: { compare: mocks.compare, hash: async () => "new-hash" } }));

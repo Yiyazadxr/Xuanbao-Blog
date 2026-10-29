@@ -101,7 +101,11 @@ export function NotificationCenter({
     setPending(true);
     setError(null);
     try {
-      await markNotificationRead(item.id);
+      const readResult = await markNotificationRead(item.id);
+      if (!readResult.ok) {
+        setError(readResult.error ?? "标记已读失败，请稍后重试");
+        return;
+      }
       markLocalRead(item.id, item.category);
     } catch {
       setError("标记已读失败，请稍后重试");
@@ -134,7 +138,11 @@ export function NotificationCenter({
     setPending(true);
     setError(null);
     try {
-      await markAllNotificationsRead();
+      const allResult = await markAllNotificationsRead();
+      if (!allResult.ok) {
+        setError(allResult.error ?? "操作失败，请稍后重试");
+        return;
+      }
       setItems((prev) => {
         const next = { ...prev };
         for (const key of Object.keys(next) as Tab[]) next[key] = next[key].map((n) => ({ ...n, read: true }));
@@ -156,7 +164,11 @@ export function NotificationCenter({
     setPending(true);
     setError(null);
     try {
-      await markCategoryRead(t);
+      const categoryResult = await markCategoryRead(t);
+      if (!categoryResult.ok) {
+        setError(categoryResult.error ?? "操作失败，请稍后重试");
+        return;
+      }
       setItems((prev) => {
         const next = { ...prev };
         for (const key of Object.keys(next) as Tab[]) {
@@ -182,7 +194,11 @@ export function NotificationCenter({
     setPending(true);
     setError(null);
     try {
-      await clearReadNotifications();
+      const clearResult = await clearReadNotifications();
+      if (!clearResult.ok) {
+        setError(clearResult.error ?? "操作失败，请稍后重试");
+        return;
+      }
       setItems((prev) => {
         const next = { ...prev };
         for (const key of Object.keys(next) as Tab[]) next[key] = next[key].filter((n) => !n.read);
@@ -203,7 +219,11 @@ export function NotificationCenter({
     setPending(true);
     setError(null);
     try {
-      await deleteNotification(id);
+      const deleteResult = await deleteNotification(id);
+      if (!deleteResult.ok) {
+        setError(deleteResult.error ?? "删除失败，请稍后重试");
+        return;
+      }
       setItems((prev) => {
         const next = { ...prev };
         for (const key of Object.keys(next) as Tab[]) next[key] = next[key].filter((n) => n.id !== id);

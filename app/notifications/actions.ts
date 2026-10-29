@@ -14,6 +14,8 @@ import {
 } from "@/lib/notification-types";
 import { notificationCategorySchema, notificationsQuerySchema, parseId, parseInput } from "@/lib/validation";
 
+export type NotificationActionState = { ok: boolean; error?: string };
+
 export type NotificationsResult = {
   items: NotificationItem[];
   nextCursor: NotificationCursor | null;
@@ -32,7 +34,7 @@ export async function getNotifications(
   };
   if (!user) return empty;
 
-  // 分类和游标均按共享 schema 校验。
+  // 入参同样走 schema 校验。
   const parsed = parseInput(notificationsQuerySchema, { category, cursor });
   if (!parsed.data) return empty;
 
@@ -43,49 +45,74 @@ export async function getNotifications(
   return { items, nextCursor, unread };
 }
 
-// 仅可修改本人的通知。
-export async function markNotificationRead(id: string) {
+// 标记单条已读；失败返回受控错误，不抛出异常给客户端。
+export async function markNotificationRead(id: string): Promise<NotificationActionState> {
   const user = await getFreshUser();
-  if (!user) throw new Error("NOTIFICATION_AUTH_REQUIRED");
+  if (!user) return { ok: false, error: "请先登录" };
   const parsed = parseId(id);
-  if (!parsed.data) throw new Error("INVALID_NOTIFICATION_ID");
-  await prisma.notification.updateMany({
-    where: { id: parsed.data, userId: user.id, read: false },
-    data: { read: true },
-  });
+  if (!parsed.data) return { ok: false, error: "通知 ID 无效" };
+  try {
+    await prisma.notification.updateMany({
+      where: { id: parsed.data, userId: user.id, read: false },
+      data: { read: true },
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "操作失败，请稍后重试" };
+  }
 }
 
-export async function markAllNotificationsRead() {
+export async function markAllNotificationsRead(): Promise<NotificationActionState> {
   const user = await getFreshUser();
-  if (!user) throw new Error("NOTIFICATION_AUTH_REQUIRED");
-  await prisma.notification.updateMany({
-    where: { userId: user.id, read: false },
-    data: { read: true },
-  });
+  if (!user) return { ok: false, error: "请先登录" };
+  try {
+    await prisma.notification.updateMany({
+      where: { userId: user.id, read: false },
+      data: { read: true },
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "操作失败，请稍后重试" };
+  }
 }
 
-export async function markCategoryRead(category: NotificationCategory) {
+export async function markCategoryRead(category: NotificationCategory): Promise<NotificationActionState> {
   const user = await getFreshUser();
-  if (!user) throw new Error("NOTIFICATION_AUTH_REQUIRED");
+  if (!user) return { ok: false, error: "请先登录" };
   const parsed = parseInput(notificationCategorySchema, category);
-  if (!parsed.data) throw new Error("INVALID_NOTIFICATION_CATEGORY");
-  await prisma.notification.updateMany({
-    where: { userId: user.id, category: parsed.data, read: false },
-    data: { read: true },
-  });
+  if (!parsed.data) return { ok: false, error: "通知分类无效" };
+  try {
+    await prisma.notification.updateMany({
+      where: { userId: user.id, category: parsed.data, read: false },
+      data: { read: true },
+    });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "操作失败，请稍后重试" };
+  }
 }
 
-export async function clearReadNotifications() {
+export async function clearReadNotifications(): Promise<NotificationActionState> {
   const user = await getFreshUser();
-  if (!user) throw new Error("NOTIFICATION_AUTH_REQUIRED");
-  await prisma.notification.deleteMany({ where: { userId: user.id, read: true } });
+  if (!user) return { ok: false, error: "请先登录" };
+  try {
+    await prisma.notification.deleteMany({ where: { userId: user.id, read: true } });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "操作失败，请稍后重试" };
+  }
 }
 
-// 仅可删除本人的通知。
-export async function deleteNotification(id: string) {
+// 删除通知；失败返回受控错误，不向用户暴露数据库异常。
+export async function deleteNotification(id: string): Promise<NotificationActionState> {
   const user = await getFreshUser();
-  if (!user) throw new Error("NOTIFICATION_AUTH_REQUIRED");
+  if (!user) return { ok: false, error: "请先登录" };
   const parsed = parseId(id);
-  if (!parsed.data) throw new Error("INVALID_NOTIFICATION_ID");
-  await prisma.notification.deleteMany({ where: { id: parsed.data, userId: user.id } });
+  if (!parsed.data) return { ok: false, error: "通知 ID 无效" };
+  try {
+    await prisma.notification.deleteMany({ where: { id: parsed.data, userId: user.id } });
+    return { ok: true };
+  } catch {
+    return { ok: false, error: "操作失败，请稍后重试" };
+  }
 }

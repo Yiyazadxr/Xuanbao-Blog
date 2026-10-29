@@ -63,7 +63,7 @@ const nextConfig: NextConfig = {
       {
         source: "/(.*)",
         headers: isProd ? [...baseSecurityHeaders, cspHeader,
-          { key: "Strict-Transport-Security", value: "max-age=31536000" },
+          { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
         ] : baseSecurityHeaders,
       },
       {
