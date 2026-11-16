@@ -17,8 +17,10 @@ export function ViewTracker({
   useEffect(() => {
     if (reported.has(postId)) return;
     reported.add(postId);
+    // keepalive：用户立刻跳转时请求也不会被页面卸载中断
     void fetch(`/api/posts/${encodeURIComponent(slug)}/view`, {
       method: "POST",
+      keepalive: true,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ postId, wordCount }),
     }).catch(() => {

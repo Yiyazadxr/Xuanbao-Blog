@@ -88,7 +88,7 @@ export function CommentForm({
             maxLength={1000}
             required
             placeholder={parentId ? "写下你的回复…" : "友好交流，评论需审核后展示"}
-            className="w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors duration-200 placeholder:text-muted focus:border-accent"
+            className="field-growing w-full rounded-xl border border-border bg-surface px-4 py-3 text-sm outline-none transition-colors duration-200 placeholder:text-muted focus:border-accent"
           />
           <div className="flex justify-end">
             <button type="submit" disabled={pending} className={`${primaryBtnCls} w-auto px-6`}>

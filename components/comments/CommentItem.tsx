@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { deleteComment } from "@/app/(admin)/admin/comments/actions";
 import { CommentForm } from "@/components/comments/CommentForm";
 import { Avatar } from "@/components/ui/Avatar";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import type { CommentWithReplies } from "@/lib/comment-types";
 import { formatDate } from "@/lib/utils";
 
@@ -26,9 +27,10 @@ export function CommentItem({
   const [error, setError] = useState<string | null>(null);
   const [replying, setReplying] = useState(false);
   const [pending, startTransition] = useTransition();
+  const { confirm, dialog } = useConfirm();
 
-  function handleDelete(id: string) {
-    if (!confirm("确定删除这条评论吗？其下回复也会一并删除。")) return;
+  async function handleDelete(id: string) {
+    if (!(await confirm("确定删除这条评论吗？其下回复也会一并删除。", "删除"))) return;
     setError(null);
     startTransition(async () => {
       try {
@@ -45,6 +47,7 @@ export function CommentItem({
 
   return (
     <li className="py-5">
+      {dialog}
       {error && <p role="alert">{error}</p>}
       <CommentBody
         name={comment.author.name}

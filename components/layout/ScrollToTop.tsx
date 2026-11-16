@@ -4,12 +4,14 @@ import { Icon } from "@/components/ui/Icon";
 import { AnimatePresence, m } from "framer-motion";
 import { useEffect, useState } from "react";
 import { DURATION, EASE_OUT } from "@/lib/motion";
+import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
 const SCROLL_THRESHOLD = 400;
 
 // 回到顶部：滚动超过阈值后浮现，点击平滑滚动至顶部
 export function ScrollToTop() {
   const [visible, setVisible] = useState(false);
+  const reduceMotion = usePrefersReducedMotion();
 
   useEffect(() => {
     const onScroll = () => setVisible(window.scrollY > SCROLL_THRESHOLD);
@@ -20,7 +22,7 @@ export function ScrollToTop() {
   }, []);
 
   function scrollToTop() {
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: reduceMotion ? "auto" : "smooth" });
   }
 
   return (

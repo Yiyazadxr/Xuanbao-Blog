@@ -21,8 +21,9 @@
   --wave-intensity: 1;
   /* 全站统一缓动（与 lib/motion.ts 的 EASE_DRAMATIC 一致） */
   --ease-custom: cubic-bezier(0.79, 0, 0.06, 1);
-  /* 原生表单控件与滚动条跟随亮色主题 */
+  /* 原生表单控件与滚动条跟随亮色主题；复选框等使用主题强调色 */
   color-scheme: light;
+  accent-color: var(--accent);
 }
 
 .dark {
@@ -38,15 +39,11 @@
   color-scheme: dark;
 }
 
-/* 主题化细滚动条：轨道透明，滑块随前景色取低透明度，暗色下自动变浅。 */
+/* 主题化滚动条：保留浏览器默认宽度以保证可点击区域，只改颜色。
+   scrollbar-width 不使用 thin：过窄的滑块对触控和低视力用户难以操作。 */
 * {
-  scrollbar-width: thin;
+  scrollbar-width: auto;
   scrollbar-color: color-mix(in srgb, var(--foreground) 22%, transparent) transparent;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -777,6 +774,8 @@ html.dark[data-monochrome-day] .festival-letter-dialog {
    --font-scale 为用户设置的 80%~120% 字号倍率。 */
 html {
   font-size: calc(clamp(15px, 1.1111vw, 19px) * var(--font-scale, 1));
+  /* 锚点与 :target 定位时避开固定导航栏，满足「焦点不被遮挡」 */
+  scroll-padding-top: calc(var(--header-h) + 1rem);
 }
 
 @media (max-width: 767px) {
@@ -976,7 +975,168 @@ body,
   border-radius: 0.75rem;
 }
 
+/* ===== 文本排版 =====
+   balance 只用于短标题；pretty 用于长正文，避免末行孤字。
+   两者都是渐进增强，旧浏览器自动忽略。 */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  text-wrap: balance;
+}
+
+.prose p,
+.prose li,
+.prose blockquote {
+  text-wrap: pretty;
+}
+
+/* 文本域只允许纵向拖拽，避免横向拉伸破坏布局。 */
+textarea {
+  resize: vertical;
+}
+
+/* 随内容增高的文本域；不支持的浏览器退回 rows 固定高度。 */
+.field-growing {
+  field-sizing: content;
+  height: auto;
+  min-block-size: 5.5rem;
+  max-block-size: 14rem;
+}
+
+/* 所有模态对话框：遮罩与面板内的滚动手势不穿透到背后页面。 */
+dialog:modal {
+  overscroll-behavior: contain;
+}
+
+dialog::backdrop {
+  overflow: hidden;
+  overscroll-behavior: contain;
+}
+
+/* ===== 原生模态对话框 =====
+   <dialog> 自带焦点约束、Esc/返回手势、背景 inert 与焦点归还；
+   这里是视口级容器，内层面板自行滚动。 */
+.app-dialog {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  height: auto;
+  max-width: none;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  overscroll-behavior: contain;
+  opacity: 0;
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+.app-dialog[open] {
+  display: grid;
+  place-items: center;
+  opacity: 1;
+  transform: none;
+}
+
+.consent-dialog[open],
+.confirm-dialog[open] {
+  padding: 1rem;
+}
+
+.toc-dialog[open] {
+  align-items: end;
+  justify-items: stretch;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .app-dialog {
+    transform: scale(0.97);
+  }
+
+  .app-dialog[open] {
+    transform: none;
+  }
+
+  .toc-dialog {
+    transform: translateY(2rem);
+  }
+
+  .toc-dialog[open] {
+    transform: none;
+  }
+
+  @starting-style {
+    .app-dialog[open] {
+      opacity: 0;
+      transform: scale(0.97);
+    }
+
+    .toc-dialog[open] {
+      transform: translateY(2rem);
+    }
+  }
+}
+
+.app-dialog::backdrop {
+  background: rgb(0 0 0 / 0.45);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  transition-property: background-color, display, overlay;
+  transition-duration: 0.2s;
+  transition-timing-function: ease-out;
+  transition-behavior: allow-discrete;
+}
+
+.consent-dialog::backdrop {
+  background: rgb(0 0 0 / 0.5);
+}
+
+@starting-style {
+  .app-dialog[open]::backdrop {
+    background: transparent;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-dialog,
+  .app-dialog::backdrop {
+    transition-duration: 0.1s;
+  }
+}
+
 /* 阅读进度条：水合前由预水合脚本按本地偏好隐藏，避免已关闭的进度条闪现 */
 html[data-reading-progress="off"] .reading-progress {
   display: none;
+}
+
+/* 优先使用滚动驱动动画：由合成线程按滚动位置直接缩放，无需滚动监听。
+   scroll(root block) 明确跟踪根滚动容器，避免被嵌套滚动容器接管。 */
+.reading-progress-bar {
+  transform: scaleX(var(--reading-progress, 0));
+  transform-origin: left center;
+  will-change: transform;
+}
+
+@keyframes reading-progress-grow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
+@supports (animation-timeline: scroll()) {
+  .reading-progress-bar {
+    animation: reading-progress-grow linear both;
+    animation-timeline: scroll(root block);
+  }
 }

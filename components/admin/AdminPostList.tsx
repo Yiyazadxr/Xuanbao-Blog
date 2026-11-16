@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { batchPosts } from "@/app/(admin)/admin/posts/actions";
 import { PostRowActions } from "@/components/admin/PostRowActions";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { formatDate } from "@/lib/utils";
 
@@ -34,6 +35,7 @@ export function AdminPostList({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [selected, setSelected] = useState<Set<string>>(new Set());
+  const { confirm, dialog } = useConfirm();
 
   if (posts.length === 0) {
     return <EmptyState title="还没有文章" description="点右上角「写文章」开始。" />;
@@ -54,9 +56,9 @@ export function AdminPostList({
     setSelected(allSelected ? new Set() : new Set(posts.map((p) => p.id)));
   }
 
-  function runBatch(operation: "publish" | "unpublish" | "archive" | "delete", categoryId?: string) {
+  async function runBatch(operation: "publish" | "unpublish" | "archive" | "delete", categoryId?: string) {
     if (selected.size === 0) return;
-    if (operation === "delete" && !window.confirm(`确定删除选中的 ${selected.size} 篇文章吗？该操作不可恢复。`)) return;
+    if (operation === "delete" && !(await confirm(`确定删除选中的 ${selected.size} 篇文章吗？该操作不可恢复。`, "删除"))) return;
     startTransition(async () => {
       await batchPosts([...selected], operation, categoryId ?? null);
       setSelected(new Set());
@@ -191,6 +193,7 @@ export function AdminPostList({
           </li>
         ))}
       </ul>
+      {dialog}
     </>
   );
 }

@@ -145,11 +145,14 @@ export function Header() {
           <m.div
             ref={menuPanelRef}
             id="mobile-menu"
+            role="dialog"
+            aria-modal="true"
+            aria-label="移动端导航"
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.28, ease: EASE_OUT }}
-            className="max-h-[calc(100dvh-var(--header-h))] overflow-y-auto border-b border-border/80 bg-background/80 backdrop-blur-sm backdrop-saturate-150 md:hidden"
+            className="max-h-[calc(100dvh-var(--header-h))] overflow-y-auto overscroll-contain border-b border-border/80 bg-background/80 backdrop-blur-sm backdrop-saturate-150 md:hidden"
           >
             <div className="mx-auto flex max-w-6xl flex-col gap-1 px-4 py-3">
               {NAV_LINKS.map((link, i) => {

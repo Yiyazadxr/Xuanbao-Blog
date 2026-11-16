@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { Analytics } from "@vercel/analytics/next";
@@ -51,6 +51,15 @@ export const metadata: Metadata = {
   alternates: {
     types: { "application/rss+xml": `${SITE.url}/feed.xml` },
   },
+};
+
+// 移动端浏览器地址栏 / 状态栏跟随主题底色；both 让原生控件跟随亮暗模式。
+export const viewport: Viewport = {
+  colorScheme: "light dark",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fafaf9" },
+    { media: "(prefers-color-scheme: dark)", color: "#0a0a0b" },
+  ],
 };
 
 export default function RootLayout({

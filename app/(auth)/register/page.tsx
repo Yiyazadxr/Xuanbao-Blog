@@ -106,7 +106,7 @@ export default function RegisterPage() {
               rows={3}
               maxLength={500}
               placeholder="选填：介绍一下自己，或说明想注册的原因"
-              className={`${inputCls} h-auto py-3`}
+              className={`${inputCls} field-growing h-auto py-3`}
             />
           </div>
           {captchaRequired && <HCaptcha siteKey={HCAPTCHA_SITE_KEY} onVerify={setCaptchaToken} />}

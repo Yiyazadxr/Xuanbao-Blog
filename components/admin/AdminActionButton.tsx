@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 
 // 后台行操作按钮：处理 pending、确认框、transition 与 router.refresh()，避免重复样板代码。
 export type AdminActionResult = { ok: boolean; error?: string; message?: string };
@@ -35,9 +36,10 @@ export function AdminActionButton({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const { confirm, dialog } = useConfirm();
 
-  function run() {
-    if (confirmText && !window.confirm(confirmText)) return;
+  async function run() {
+    if (confirmText && !(await confirm(confirmText))) return;
     setError(null);
     startTransition(async () => {
       try {
@@ -52,11 +54,14 @@ export function AdminActionButton({
   }
 
   return (
-    <span className="inline-flex items-center gap-2">
-      <button type="button" disabled={pending} onClick={run} className={className ?? `${baseCls} ${variantCls[variant]}`}>
-        {children}
-      </button>
-      {error && <span role="alert" className="text-xs text-red-500">{error}</span>}
-    </span>
+    <>
+      <span className="inline-flex items-center gap-2">
+        <button type="button" disabled={pending} onClick={run} className={className ?? `${baseCls} ${variantCls[variant]}`}>
+          {children}
+        </button>
+        {error && <span role="alert" className="text-xs text-red-500">{error}</span>}
+      </span>
+      {dialog}
+    </>
   );
 }

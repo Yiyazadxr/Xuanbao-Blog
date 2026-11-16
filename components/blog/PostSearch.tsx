@@ -61,39 +61,44 @@ export function PostSearch({
 
   return (
     <div ref={boxRef} className="relative w-full sm:w-72">
-      <form
-        role="search"
-        onSubmit={(e) => {
-          e.preventDefault();
-          addHistory(value);
-        }}
-      >
-        <label htmlFor="post-search" className="sr-only">
-          搜索文章
-        </label>
-        <Icon
-          icon="ph:magnifying-glass-bold"
-          width={18}
-          height={18}
-          className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
-          aria-hidden
-        />
-        <input
-          id="post-search"
-          type="search"
-          value={value}
-          onChange={(e) => {
-            onChange(e.target.value);
-            setOpen(true);
+      <search>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            addHistory(value);
           }}
-          onFocus={() => setOpen(true)}
-          placeholder="搜索文章…"
-          className="h-11 w-full rounded-full border border-border bg-surface pl-11 pr-4 text-sm outline-none transition-colors duration-200 placeholder:text-muted focus:border-accent"
-        />
-      </form>
+        >
+          <label htmlFor="post-search" className="sr-only">
+            搜索文章
+          </label>
+          <Icon
+            icon="ph:magnifying-glass-bold"
+            width={18}
+            height={18}
+            className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-muted"
+            aria-hidden
+          />
+          <input
+            id="post-search"
+            type="search"
+            value={value}
+            onChange={(e) => {
+              onChange(e.target.value);
+              setOpen(true);
+            }}
+            onFocus={() => setOpen(true)}
+            aria-controls="post-search-history"
+            placeholder="搜索文章…"
+            className="h-11 w-full rounded-full border border-border bg-surface pl-11 pr-4 text-sm outline-none transition-colors duration-200 placeholder:text-muted focus:border-accent"
+          />
+        </form>
+      </search>
 
       {showHistory && (
-        <div className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-border bg-surface shadow-lg">
+        <div
+          id="post-search-history"
+          className="absolute z-20 mt-2 w-full overflow-hidden rounded-xl border border-border bg-surface shadow-lg"
+        >
           <div className="flex items-center justify-between border-b border-border/60 px-4 py-2">
             <span className="text-xs font-medium text-muted">搜索历史</span>
             <button
@@ -104,7 +109,7 @@ export function PostSearch({
               清空
             </button>
           </div>
-          <ul className="max-h-60 overflow-y-auto">
+          <ul aria-label="搜索历史" className="max-h-60 overflow-y-auto overscroll-contain">
             {history.map((term) => (
               <li key={term}>
                 <button

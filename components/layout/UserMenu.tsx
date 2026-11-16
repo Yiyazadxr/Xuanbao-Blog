@@ -6,17 +6,13 @@ import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { canAccessAdmin } from "@/lib/roles";
-import { useFocusTrap } from "@/lib/use-focus-trap";
 
-// 导航栏右侧用户区：未登录显示登录图标；已登录显示头像下拉菜单
+// 导航栏右侧用户区：未登录显示登录图标；已登录显示头像下拉菜单。
+// 这是披露式面板而非 ARIA menu，故不声明 role="menu"（未实现方向键契约）。
 export function UserMenu() {
   const { data: session, status } = useSession();
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-
-  // 下拉打开时锁定焦点、关闭时归还给触发按钮
-  useFocusTrap(panelRef, open);
 
   // 点击外部 / Escape 关闭下拉
   useEffect(() => {
@@ -55,12 +51,19 @@ export function UserMenu() {
   const { user } = session;
 
   return (
-    <div ref={menuRef} className="relative">
+    <div
+      ref={menuRef}
+      className="relative"
+      onBlur={(e) => {
+        const next = e.relatedTarget;
+        if (!(next instanceof Node) || !e.currentTarget.contains(next)) setOpen(false);
+      }}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        aria-haspopup="menu"
+        aria-controls="user-menu-panel"
         aria-label="用户菜单"
         className="inline-flex size-10 cursor-pointer items-center justify-center rounded-full focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
@@ -69,8 +72,7 @@ export function UserMenu() {
 
       {open && (
         <div
-          ref={panelRef}
-          role="menu"
+          id="user-menu-panel"
           className="absolute right-0 top-12 w-44 overflow-hidden rounded-xl border border-border bg-background shadow-lg"
         >
           <p className="border-b border-border px-4 py-3 text-sm">
@@ -79,7 +81,6 @@ export function UserMenu() {
           </p>
           <Link
             href="/notifications"
-            role="menuitem"
             onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm text-muted transition-colors duration-150 hover:bg-foreground/5 hover:text-foreground"
           >
@@ -87,7 +88,6 @@ export function UserMenu() {
           </Link>
           <Link
             href="/bookmarks"
-            role="menuitem"
             onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm text-muted transition-colors duration-150 hover:bg-foreground/5 hover:text-foreground"
           >
@@ -95,7 +95,6 @@ export function UserMenu() {
           </Link>
           <Link
             href="/reading"
-            role="menuitem"
             onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm text-muted transition-colors duration-150 hover:bg-foreground/5 hover:text-foreground"
           >
@@ -103,7 +102,6 @@ export function UserMenu() {
           </Link>
           <Link
             href="/settings"
-            role="menuitem"
             onClick={() => setOpen(false)}
             className="block px-4 py-2.5 text-sm text-muted transition-colors duration-150 hover:bg-foreground/5 hover:text-foreground"
           >
@@ -112,8 +110,7 @@ export function UserMenu() {
           {canAccessAdmin(user.role) && (
             <Link
               href="/admin"
-              role="menuitem"
-              onClick={() => setOpen(false)}
+                onClick={() => setOpen(false)}
               className="block px-4 py-2.5 text-sm text-muted transition-colors duration-150 hover:bg-foreground/5 hover:text-foreground"
             >
               管理后台
@@ -121,7 +118,6 @@ export function UserMenu() {
           )}
           <button
             type="button"
-            role="menuitem"
             onClick={() => signOut({ callbackUrl: "/" })}
             className="block w-full cursor-pointer px-4 py-2.5 text-left text-sm text-muted transition-colors duration-150 hover:bg-foreground/5 hover:text-foreground"
           >

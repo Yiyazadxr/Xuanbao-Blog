@@ -11,7 +11,10 @@ export function Sidebar({ toc }: { toc: TocItem[] }) {
   if (toc.length === 0) return null;
 
   return (
-    <nav aria-label="文章目录" className="sticky top-24">
+    <nav
+      aria-label="文章目录"
+      className="sticky top-[calc(var(--header-h)+1rem)]"
+    >
       <p className="mb-3 text-xs font-semibold uppercase tracking-widest text-muted">
         目录
       </p>
