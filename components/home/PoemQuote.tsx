@@ -68,21 +68,27 @@ export function PoemQuote() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="relative inline-block min-w-0"
           >
-            <span
-              className="cursor-default text-accent"
+            {/* 用按钮承载诗句：触屏没有 hover，键盘也需要能查看出处。 */}
+            <button
+              type="button"
+              onClick={() => setShowSource(true)}
               onMouseEnter={handleEnter}
               onMouseLeave={handleLeave}
-              onFocus={handleEnter}
+              onFocus={() => setShowSource(true)}
               onBlur={handleLeave}
+              aria-expanded={showSource}
+              aria-controls="poem-source"
+              className="cursor-help text-accent"
             >
               <span className="mr-0.5">「</span>
               {poem.text}
               <span className="ml-0.5">」</span>
-            </span>
+            </button>
             {/* 出处浮层：绝对定位、不占文档流，避免显示/隐藏引起布局回流，把诗句挤离鼠标并触发 mouseleave。 */}
             <AnimatePresence>
               {showSource && (
                 <m.span
+                  id="poem-source"
                   initial={reduceMotion ? false : { opacity: 0, y: 6, scale: 0.96 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={reduceMotion ? undefined : { opacity: 0, y: 4, scale: 0.98 }}

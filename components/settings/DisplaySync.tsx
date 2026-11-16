@@ -29,24 +29,24 @@ export function DisplaySync() {
     getDisplayPreferences()
       .then((prefs) => {
         if (cancelled || !prefs) return;
-      writeFontScale(prefs.fontScale);
-      writeSpacingScale(prefs.spacingScale);
-      writeDensity(prefs.density);
-      if (prefs.headerH != null) writeHeaderH(prefs.headerH);
-      if (prefs.footerPy != null) writeFooterPy(prefs.footerPy);
-      if (prefs.waveIntensity != null) writeWaveIntensity(prefs.waveIntensity);
-      if (prefs.inkEnabled != null) writeInkEnabled(prefs.inkEnabled);
-      if (prefs.reduceMotion != null) setReducedMotion(prefs.reduceMotion);
-      if (prefs.proseLeading != null) writeProseLeading(prefs.proseLeading);
-      if (prefs.smoothScroll != null) writeSmoothScroll(prefs.smoothScroll);
-      if (prefs.readingProgress != null) writeReadingProgress(prefs.readingProgress);
-      applyDisplay(
-        prefs.fontScale,
-        prefs.density,
-        prefs.headerH ?? undefined,
-        prefs.footerPy ?? undefined,
-        prefs.spacingScale
-      );
+        writeFontScale(prefs.fontScale);
+        writeSpacingScale(prefs.spacingScale);
+        writeDensity(prefs.density);
+        if (prefs.headerH != null) writeHeaderH(prefs.headerH);
+        if (prefs.footerPy != null) writeFooterPy(prefs.footerPy);
+        if (prefs.waveIntensity != null) writeWaveIntensity(prefs.waveIntensity);
+        if (prefs.inkEnabled != null) writeInkEnabled(prefs.inkEnabled);
+        if (prefs.reduceMotion != null) setReducedMotion(prefs.reduceMotion);
+        if (prefs.proseLeading != null) writeProseLeading(prefs.proseLeading);
+        if (prefs.smoothScroll != null) writeSmoothScroll(prefs.smoothScroll);
+        if (prefs.readingProgress != null) writeReadingProgress(prefs.readingProgress);
+        applyDisplay(
+          prefs.fontScale,
+          prefs.density,
+          prefs.headerH ?? undefined,
+          prefs.footerPy ?? undefined,
+          prefs.spacingScale
+        );
       })
       // 拉取失败时静默回退到本地偏好。
       .catch(() => {});

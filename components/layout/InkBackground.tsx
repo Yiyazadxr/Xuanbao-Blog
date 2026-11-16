@@ -5,7 +5,11 @@
 import { InkFluid, INK_MAX_DENSITY } from "@/lib/ink-fluid";
 import { readVar, type Rgb } from "@/lib/color";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
+import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+
+// 后台与账号流程不需要装饰性墨迹：既分散注意力，也白白消耗 CPU。
+const UTILITY_PREFIXES = ["/admin", "/settings", "/login", "/register", "/verify-email"];
 
 /** 网格单元边长，越小越细腻但开销越大 */
 const CELL_SIZE = 12;
@@ -41,6 +45,8 @@ interface Palette {
 }
 
 export function InkBackground() {
+  const pathname = usePathname();
+  const utilityRoute = UTILITY_PREFIXES.some((prefix) => pathname.startsWith(prefix));
   const reduceMotion = usePrefersReducedMotion();
   const [enabled, setEnabled] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -81,7 +87,7 @@ export function InkBackground() {
   }, []);
 
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled || utilityRoute) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
@@ -348,9 +354,9 @@ export function InkBackground() {
       document.removeEventListener("visibilitychange", onVisibility);
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     };
-  }, [enabled]);
+  }, [enabled, utilityRoute]);
 
-  if (!enabled) return null;
+  if (!enabled || utilityRoute) return null;
 
   return (
     <div aria-hidden className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">

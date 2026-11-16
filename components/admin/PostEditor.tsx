@@ -8,6 +8,7 @@ import { useEffect, useRef, useState, useTransition } from "react";
 import ReactMarkdown from "react-markdown";
 import { savePost, uploadImage } from "@/app/(admin)/admin/posts/actions";
 import type { PostConflict } from "@/lib/post-page-types";
+import { useConfirm } from "@/components/ui/ConfirmDialog";
 import { errorCls, inputCls, labelCls, primaryBtnCls } from "@/components/ui/form-styles";
 import { EXCERPT_MAX } from "@/lib/validation";
 import { slugify } from "@/lib/slug";
@@ -80,6 +81,7 @@ export function PostEditor({
   const [conflict, setConflict] = useState<PostConflict | null>(null);
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null);
   const [uploading, setUploading] = useState(false);
+  const { confirm, dialog } = useConfirm();
 
   // 恢复上次的草稿（仅在客户端挂载时执行一次；从 localStorage 同步外部状态）。
   // 新建与编辑都恢复对应 key 的草稿；编辑时草稿优先于已落库内容，保留未保存的修改。
@@ -117,6 +119,7 @@ export function PostEditor({
   // 自动保存草稿（防抖，新建与编辑均生效）。
   // 跳过首次挂载：首屏加载的初始内容不应触发「已自动保存」，仅用户实际修改后才保存并提示。
   const autosaveTimer = useRef<ReturnType<typeof setTimeout>>(null);
+  const pendingDraft = useRef<{ key: string; value: string } | null>(null);
   const firstRun = useRef(true);
   useEffect(() => {
     if (firstRun.current) {
@@ -124,21 +127,43 @@ export function PostEditor({
       return;
     }
     if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+    pendingDraft.current = {
+      key: draftKey(post?.id),
+      value: JSON.stringify({ title, slug, excerpt, coverImage, categoryId, seriesId, tags, pinned, featured, content, expectedUpdatedAt }),
+    };
     autosaveTimer.current = setTimeout(() => {
+      const draft = pendingDraft.current;
+      pendingDraft.current = null;
+      autosaveTimer.current = null;
+      if (!draft) return;
       try {
-        localStorage.setItem(
-          draftKey(post?.id),
-          JSON.stringify({ title, slug, excerpt, coverImage, categoryId, seriesId, tags, pinned, featured, content, expectedUpdatedAt })
-        );
+        localStorage.setItem(draft.key, draft.value);
         setLastSavedAt(new Date());
       } catch {
         // 存储失败忽略
       }
     }, 800);
     return () => {
-      if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
+      if (autosaveTimer.current) {
+        clearTimeout(autosaveTimer.current);
+        autosaveTimer.current = null;
+      }
     };
   }, [title, slug, excerpt, coverImage, categoryId, seriesId, tags, pinned, featured, content, post?.id, expectedUpdatedAt]);
+
+  // 卸载时补写仍在防抖窗口内的草稿，避免「改完立刻离开」丢失最后一段输入。
+  useEffect(() => {
+    return () => {
+      const draft = pendingDraft.current;
+      pendingDraft.current = null;
+      if (!draft) return;
+      try {
+        localStorage.setItem(draft.key, draft.value);
+      } catch {
+        // 存储失败忽略
+      }
+    };
+  }, []);
 
   function handleTitleChange(value: string) {
     setTitle(value);
@@ -245,8 +270,8 @@ export function PostEditor({
         </section>
       )}
       {error && post && (
-        <button type="button" disabled={pending} onClick={() => {
-          if (!window.confirm("请先复制需要保留的修改。继续将清除本地草稿并加载最新文章。")) return;
+        <button type="button" disabled={pending} onClick={async () => {
+          if (!(await confirm("请先复制需要保留的修改。继续将清除本地草稿并加载最新文章。", "清除并重新加载"))) return;
           if (autosaveTimer.current) clearTimeout(autosaveTimer.current);
           try {
             localStorage.removeItem(draftKey(post.id));
@@ -457,6 +482,7 @@ export function PostEditor({
           </span>
         )}
       </div>
+      {dialog}
     </div>
   );
 }

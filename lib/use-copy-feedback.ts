@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type CopyFeedback = "idle" | "copied" | "failed";
+export type CopyFeedback = "idle" | "copied" | "shared" | "failed";
 
 // 复制/分享反馈状态：短暂显示「已复制/失败」后自动复位。
 // ShareButton 与 CodeBlock 共用，避免各自维护 timer 造成重复逻辑。

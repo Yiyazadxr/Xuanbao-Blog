@@ -24,7 +24,8 @@ export function SocialLinks() {
     try {
       await navigator.clipboard.writeText(rssUrl);
     } catch {
-      // 剪贴板不可用时静默，仍跳转
+      // 剪贴板不可用时静默；链接仍在新标签打开。
+      return;
     }
     setCopied(true);
     if (timerRef.current) clearTimeout(timerRef.current);
@@ -52,6 +53,8 @@ export function SocialLinks() {
       </button>
       <a
         href="/feed.xml"
+        target="_blank"
+        rel="noopener noreferrer"
         onClick={handleRssClick}
         aria-label={copied ? "RSS 已复制" : "RSS"}
         className="relative inline-flex size-9 items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-foreground/5 hover:text-foreground"

@@ -60,7 +60,12 @@ import {
   type Density,
   type DisplayPreferenceValues,
 } from "@/lib/display";
-import { setReducedMotion, usePrefersReducedMotion } from "@/lib/use-reduced-motion";
+import {
+  readReduceMotionSetting,
+  setReducedMotion,
+  usePrefersReducedMotion,
+  useSystemReducedMotion,
+} from "@/lib/use-reduced-motion";
 import { successCls } from "@/components/ui/form-styles";
 
 const rangeCls =
@@ -83,13 +88,20 @@ export function DisplayForm() {
   const [proseLeading, setProseLeading] = useState(PROSE_LEADING_DEFAULT);
   const [smoothScroll, setSmoothScroll] = useState(SMOOTH_SCROLL_DEFAULT);
   const [readingProgress, setReadingProgress] = useState(READING_PROGRESS_DEFAULT);
+  // 站内显式选择与系统偏好分开：同步到账号的只能是用户的选择，不能把系统偏好写成 true。
+  const [reduceMotionChoice, setReduceMotionChoice] = useState<boolean | null>(null);
   const reduceMotion = usePrefersReducedMotion();
+  const systemReduceMotion = useSystemReducedMotion();
   const persistTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPrefs = useRef<DisplayPreferenceValues | null>(null);
 
-  // 组件卸载时清掉未触发的防抖保存，避免在已卸载组件上更新状态
+  // 卸载时把仍在防抖窗口内的最后一次修改落库，避免「改完立刻离开」丢失同步。
   useEffect(() => {
     return () => {
       if (persistTimer.current) clearTimeout(persistTimer.current);
+      const latest = pendingPrefs.current;
+      pendingPrefs.current = null;
+      if (latest) void saveDisplayPreferences(latest);
     };
   }, []);
 
@@ -106,6 +118,7 @@ export function DisplayForm() {
       setProseLeading(readProseLeading());
       setSmoothScroll(readSmoothScroll());
       setReadingProgress(readReadingProgress());
+      setReduceMotionChoice(readReduceMotionSetting());
       setSync(isSyncEnabled());
     });
   }, []);
@@ -113,9 +126,14 @@ export function DisplayForm() {
   // 防抖后同步到账号：拖动滑块不触发请求风暴，失败时提示而非静默丢弃
   function persist(v: DisplayPreferenceValues) {
     if (!sync) return;
+    pendingPrefs.current = v;
     if (persistTimer.current) clearTimeout(persistTimer.current);
     persistTimer.current = setTimeout(() => {
-      void saveDisplayPreferences(v).then((res) => {
+      const latest = pendingPrefs.current;
+      pendingPrefs.current = null;
+      persistTimer.current = null;
+      if (!latest) return;
+      void saveDisplayPreferences(latest).then((res) => {
         if (!res.ok) setMsg(res.error ?? "同步失败");
       });
     }, 500);
@@ -131,7 +149,7 @@ export function DisplayForm() {
       footerPy: density === "custom" ? footerPy : null,
       waveIntensity,
       inkEnabled,
-      reduceMotion,
+      reduceMotion: reduceMotionChoice,
       proseLeading,
       smoothScroll,
       readingProgress,
@@ -204,6 +222,7 @@ export function DisplayForm() {
   }
 
   function changeReduceMotion(enabled: boolean) {
+    setReduceMotionChoice(enabled);
     setReducedMotion(enabled);
     persist({ ...basePrefs(), reduceMotion: enabled });
   }
@@ -215,6 +234,12 @@ export function DisplayForm() {
     setSyncPending(true);
     try {
       if (!enabled) {
+        // 丢弃尚未落库的防抖保存，避免关闭同步后又被补写回账号。
+        if (persistTimer.current) {
+          clearTimeout(persistTimer.current);
+          persistTimer.current = null;
+        }
+        pendingPrefs.current = null;
         await clearDisplayPreferences();
         setMsg("已关闭跨设备同步，偏好仅保存在本机");
         return;
@@ -227,7 +252,8 @@ export function DisplayForm() {
       const finalFp = prefs?.footerPy ?? footerPy;
       const finalWave = prefs?.waveIntensity ?? waveIntensity;
       const finalInk = prefs?.inkEnabled ?? inkEnabled;
-      const finalMotion = prefs?.reduceMotion ?? reduceMotion;
+      // 服务端没有显式选择时保持 null，不把本机系统偏好写进账号。
+      const finalMotion = prefs?.reduceMotion ?? null;
       const finalLeading = prefs?.proseLeading ?? proseLeading;
       const finalSmooth = prefs?.smoothScroll ?? smoothScroll;
       const finalProgress = prefs?.readingProgress ?? readingProgress;
@@ -241,7 +267,9 @@ export function DisplayForm() {
       setProseLeading(finalLeading);
       setSmoothScroll(finalSmooth);
       setReadingProgress(finalProgress);
-      setReducedMotion(finalMotion);
+      setReduceMotionChoice(finalMotion);
+      // 只有账号里存在显式选择时才写本地；null 表示继续跟随系统。
+      if (finalMotion != null) setReducedMotion(finalMotion);
       writeFontScale(finalScale);
       writeSpacingScale(finalSpacing);
       writeDensity(finalDensity);
@@ -464,8 +492,11 @@ export function DisplayForm() {
         <input
           type="checkbox"
           checked={reduceMotion}
+          disabled={systemReduceMotion}
           onChange={(e) => changeReduceMotion(e.target.checked)}
-          className="size-5 shrink-0 cursor-pointer accent-[var(--accent)]"
+          className={`size-5 shrink-0 accent-[var(--accent)] ${
+            systemReduceMotion ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+          }`}
           role="switch"
         />
       </label>

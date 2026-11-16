@@ -32,27 +32,49 @@ export function Hero() {
   useEffect(() => {
     if (reduceMotion) return;
     let rafId = 0;
+    const blobA = blobARef.current;
+    const blobB = blobBRef.current;
+
+    const apply = () => {
+      if (blobA) {
+        blobA.style.transform = `translate(${current.current.x * 60}px, ${current.current.y * 40}px)`;
+      }
+      if (blobB) {
+        blobB.style.transform = `translate(${current.current.x * -50}px, ${current.current.y * -30}px)`;
+      }
+    };
+
+    // 插值到接近目标后停帧；否则指针静止时仍会以 60fps 空转。
+    const tick = () => {
+      rafId = 0;
+      const dx = target.current.x - current.current.x;
+      const dy = target.current.y - current.current.y;
+      if (Math.abs(dx) < 0.0005 && Math.abs(dy) < 0.0005) {
+        current.current.x = target.current.x;
+        current.current.y = target.current.y;
+        apply();
+        return;
+      }
+      current.current.x += dx * 0.06;
+      current.current.y += dy * 0.06;
+      apply();
+      rafId = requestAnimationFrame(tick);
+    };
+
     const onMove = (e: PointerEvent) => {
       // 归一化到 -0.5 ~ 0.5
       target.current.x = e.clientX / window.innerWidth - 0.5;
       target.current.y = e.clientY / window.innerHeight - 0.5;
+      if (!rafId) rafId = requestAnimationFrame(tick);
     };
-    const tick = () => {
-      current.current.x += (target.current.x - current.current.x) * 0.06;
-      current.current.y += (target.current.y - current.current.y) * 0.06;
-      if (blobARef.current) {
-        blobARef.current.style.transform = `translate(${current.current.x * 60}px, ${current.current.y * 40}px)`;
-      }
-      if (blobBRef.current) {
-        blobBRef.current.style.transform = `translate(${current.current.x * -50}px, ${current.current.y * -30}px)`;
-      }
-      rafId = requestAnimationFrame(tick);
-    };
-    rafId = requestAnimationFrame(tick);
+
     window.addEventListener("pointermove", onMove, { passive: true });
     return () => {
-      cancelAnimationFrame(rafId);
+      if (rafId) cancelAnimationFrame(rafId);
       window.removeEventListener("pointermove", onMove);
+      current.current = { x: 0, y: 0 };
+      if (blobA) blobA.style.transform = "";
+      if (blobB) blobB.style.transform = "";
     };
   }, [reduceMotion]);
 

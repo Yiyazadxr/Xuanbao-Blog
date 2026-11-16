@@ -12,7 +12,7 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
     if (typeof navigator.share === "function") {
       try {
         await navigator.share({ title, url });
-        show("copied");
+        show("shared");
       } catch {
         // 用户取消或分享失败时保持原状态。
       }
@@ -37,22 +37,23 @@ export function ShareButton({ title, slug }: { title: string; slug: string }) {
   }
 
   const copied = status === "copied";
+  const shared = status === "shared";
   const failed = status === "failed";
 
   return (
     <button
       type="button"
       onClick={handleShare}
-      aria-label={copied ? "链接已复制" : failed ? "复制失败" : "分享文章"}
+      aria-label={shared ? "已分享" : copied ? "链接已复制" : failed ? "复制失败" : "分享文章"}
       className="inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border px-5 text-sm font-semibold transition-all duration-200 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent border-border text-muted hover:border-accent hover:text-accent"
     >
       <Icon
-        icon={copied ? "ph:check-bold" : failed ? "ph:x-bold" : "ph:share-network-bold"}
+        icon={shared || copied ? "ph:check-bold" : failed ? "ph:x-bold" : "ph:share-network-bold"}
         width={18}
         height={18}
         aria-hidden
       />
-      {copied ? "已复制" : failed ? "复制失败" : "分享"}
+      {shared ? "已分享" : copied ? "已复制" : failed ? "复制失败" : "分享"}
     </button>
   );
 }

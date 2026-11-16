@@ -12,7 +12,13 @@ vi.mock("react", () => ({
   },
 }));
 
-import { setReducedMotion, usePrefersReducedMotion } from "./use-reduced-motion";
+import {
+  readReduceMotionSetting,
+  readSystemReducedMotion,
+  setReducedMotion,
+  usePrefersReducedMotion,
+  useSystemReducedMotion,
+} from "./use-reduced-motion";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -32,6 +38,8 @@ it("系统减少动效变化会通知订阅者，且站内关闭不覆盖系统�
     removeItem: () => { stored = null; },
   });
 
+  expect(readReduceMotionSetting()).toBe(null);
+  expect(readSystemReducedMotion()).toBe(false);
   expect(usePrefersReducedMotion()).toBe(false);
   const listener = vi.fn();
   const unsubscribe = hook.subscribe!(listener);
@@ -47,4 +55,16 @@ it("系统减少动效变化会通知订阅者，且站内关闭不覆盖系统�
   expect(hook.snapshot!()).toBe(false);
   unsubscribe();
   expect(query.removeEventListener).toHaveBeenCalledTimes(1);
+
+  // 显式选择与系统偏好在存储层分开，设置页才能判断开关是否该禁用。
+  stored = "0";
+  expect(readReduceMotionSetting()).toBe(false);
+  stored = "1";
+  expect(readReduceMotionSetting()).toBe(true);
+  stored = null;
+
+  expect(useSystemReducedMotion()).toBe(false);
+  systemReduced = true;
+  changed();
+  expect(hook.snapshot!()).toBe(true);
 });

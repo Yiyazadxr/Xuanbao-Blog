@@ -8,12 +8,12 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   deleteNotification,
   getNotifications,
+  getNotificationSummary,
   markAllNotificationsRead,
   markNotificationRead,
 } from "@/app/notifications/actions";
 import { NotificationRow } from "@/components/notifications/NotificationRow";
 import type { NotificationItem, NotificationUnreadSummary } from "@/lib/notification-types";
-import { useFocusTrap } from "@/lib/use-focus-trap";
 
 const EMPTY_SUMMARY: NotificationUnreadSummary = {
   total: 0,
@@ -28,14 +28,15 @@ export function NotificationBell() {
   const [unread, setUnread] = useState<NotificationUnreadSummary>(EMPTY_SUMMARY);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [loading, setLoading] = useState(false);
   const busy = useRef(false);
   const requestVersion = useRef(0);
   const rootRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const refresh = useCallback(async () => {
     if (busy.current) return;
     const version = ++requestVersion.current;
+    setLoading(true);
     try {
       const data = await getNotifications("all");
       if (version !== requestVersion.current) return;
@@ -44,26 +45,26 @@ export function NotificationBell() {
       setError(null);
     } catch {
       if (version === requestVersion.current) setError("通知加载失败");
+    } finally {
+      if (version === requestVersion.current) setLoading(false);
     }
   }, []);
 
+  // 挂载时只取未读摘要；完整列表等用户打开面板再加载。
   useEffect(() => {
     if (status !== "authenticated") return;
     let cancelled = false;
-    const versions = requestVersion;
-    const version = ++requestVersion.current;
-    getNotifications("all")
-      .then((data) => {
-        if (cancelled || version !== requestVersion.current) return;
-        setItems(data.items);
-        setUnread(data.unread);
+    // 如果用户在摘要返回前就打开了面板，以完整列表的未读数为准。
+    const version = requestVersion.current;
+    getNotificationSummary()
+      .then((summary) => {
+        if (!cancelled && requestVersion.current === version) setUnread(summary);
       })
       .catch(() => {
-        if (!cancelled && version === requestVersion.current) setError("通知加载失败");
+        if (!cancelled && requestVersion.current === version) setError("通知加载失败");
       });
     return () => {
       cancelled = true;
-      versions.current++;
     };
   }, [status]);
 
@@ -83,8 +84,6 @@ export function NotificationBell() {
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
-
-  useFocusTrap(panelRef, open);
 
   // 加载中占位，防布局跳动
   if (status === "loading") {
@@ -191,6 +190,7 @@ export function NotificationBell() {
         onClick={toggle}
         aria-label={unread.total > 0 ? `通知，${unread.total} 条未读` : "通知"}
         aria-expanded={open}
+        aria-controls="notification-panel"
         className="relative inline-flex size-10 cursor-pointer items-center justify-center rounded-full text-muted transition-colors duration-200 hover:bg-foreground/10 hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent"
       >
         <Icon icon="ph:bell-bold" width={22} height={22} />
@@ -202,10 +202,10 @@ export function NotificationBell() {
       </button>
 
       {open && (
-        <div
-          ref={panelRef}
-          role="dialog"
+        <section
+          id="notification-panel"
           aria-label="通知列表"
+          aria-busy={loading}
           className="absolute right-0 top-12 w-[22rem] overflow-hidden rounded-xl border border-border bg-background shadow-lg"
         >
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
@@ -223,8 +223,14 @@ export function NotificationBell() {
           </div>
           {error && <p role="alert" className="px-4 py-2 text-xs text-red-500">{error}</p>}
 
-          <div className="max-h-[24rem] overflow-y-auto divide-y divide-border">
-            {items.length === 0 ? (
+          <div className="max-h-[24rem] overflow-y-auto overscroll-contain divide-y divide-border">
+            {loading && items.length === 0 ? (
+              <div className="space-y-3 p-4" aria-hidden>
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-12 animate-pulse rounded-lg bg-surface" />
+                ))}
+              </div>
+            ) : items.length === 0 ? (
               <EmptyState title="暂无通知" className="py-10" />
             ) : (
               items.map((item) => (
@@ -241,7 +247,7 @@ export function NotificationBell() {
             查看全部通知
             <Icon icon="ph:arrow-right-bold" width={12} height={12} aria-hidden />
           </Link>
-        </div>
+        </section>
       )}
     </div>
   );
