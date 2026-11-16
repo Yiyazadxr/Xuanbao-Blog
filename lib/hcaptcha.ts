@@ -22,6 +22,8 @@ export async function verifyHCaptcha(token: string): Promise<boolean> {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({ secret, response: token }),
       cache: "no-store",
+      // 外部校验服务卡住时不能拖住注册/申请请求。
+      signal: AbortSignal.timeout(5000),
     });
     if (!res.ok) return false;
     const data = (await res.json()) as HCaptchaResponse;

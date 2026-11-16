@@ -1,4 +1,4 @@
-import { clampPage, POSTS_PER_PAGE } from "@/lib/pagination";
+import { fetchPage, POSTS_PER_PAGE } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { listSelect, PUBLISHED_FILTER, toListItem, type PostListItem } from "@/lib/posts";
 
@@ -20,14 +20,21 @@ export async function getBookmarkedPosts(userId: string, requestedPage: number):
   page: number;
 }> {
   const where = { userId, post: PUBLISHED_FILTER };
-  const total = await prisma.bookmark.count({ where });
-  const page = clampPage(requestedPage, total);
-  const rows = await prisma.bookmark.findMany({
-    where,
-    orderBy: [{ createdAt: "desc" }, { postId: "desc" }],
-    skip: (page - 1) * POSTS_PER_PAGE,
-    take: POSTS_PER_PAGE,
-    select: { post: { select: listSelect } },
+  const { rows, total, skip } = await fetchPage({
+    count: () => prisma.bookmark.count({ where }),
+    fetchRows: (pageSkip, pageTake) => prisma.bookmark.findMany({
+      where,
+      orderBy: [{ createdAt: "desc" }, { postId: "desc" }],
+      skip: pageSkip,
+      take: pageTake,
+      select: { post: { select: listSelect } },
+    }),
+    requestedSkip: (requestedPage - 1) * POSTS_PER_PAGE,
+    pageSize: POSTS_PER_PAGE,
   });
-  return { posts: rows.map((r) => toListItem(r.post)), total, page };
+  return {
+    posts: rows.map((r) => toListItem(r.post)),
+    total,
+    page: Math.floor(skip / POSTS_PER_PAGE) + 1,
+  };
 }

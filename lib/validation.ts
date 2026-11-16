@@ -1,11 +1,5 @@
 // Server Action 和 Route Handler 不信任客户端入参。
 import { z } from "zod";
-
-export const postViewSchema = z.object({
-  postId: z.string().min(1).max(100),
-  // 兼容旧客户端；统计字数始终使用数据库值。
-  wordCount: z.number().int().min(0).max(10_000_000).nullable().optional(),
-}).strict();
 import {
   FONT_SCALE_MAX,
   FONT_SCALE_MIN,
@@ -21,6 +15,12 @@ import {
   WAVE_INTENSITY_MIN,
 } from "@/lib/display";
 import { NOTIFICATION_CATEGORIES, type NotificationCategory } from "@/lib/notification-types";
+
+export const postViewSchema = z.object({
+  postId: z.string().min(1).max(100),
+  // 兼容旧客户端；统计字数始终使用数据库值。
+  wordCount: z.number().int().min(0).max(10_000_000).nullable().optional(),
+}).strict();
 
 // 为未显式声明的 Zod 错误提供中文文案。
 z.config({

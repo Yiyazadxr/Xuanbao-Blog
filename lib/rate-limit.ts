@@ -53,7 +53,9 @@ export const rateLimit = {
     const now = Date.now();
     const row = await prisma.rateLimit.findUnique({ where: { key } });
     if (!row || row.resetAt.getTime() <= now) return { blocked: false, retryAfterSec: 0 };
-    if (row.count > limit) {
+    // count 是已发生的次数；第 limit + 1 次请求会被 checkAndHit 拒绝，
+    // 因此预检在 count 达到 limit 时就应报告 blocked，避免多放一次。
+    if (row.count >= limit) {
       return { blocked: true, retryAfterSec: Math.ceil((row.resetAt.getTime() - now) / 1000) };
     }
     return { blocked: false, retryAfterSec: 0 };
@@ -124,15 +126,26 @@ export const rateLimit = {
   },
 };
 
+let invalidHopsWarned = false;
+
+// 配置损坏时按 0 处理（取最右侧地址），避免一个环境变量错误让登录、评论全部 500。
+function trustedProxyHops(): number {
+  const configured = process.env.TRUSTED_PROXY_HOPS;
+  if (!configured) return 0;
+  const hops = Number(configured);
+  if (/^\d+$/.test(configured) && Number.isSafeInteger(hops)) return hops;
+  if (!invalidHopsWarned) {
+    invalidHopsWarned = true;
+    console.error("TRUSTED_PROXY_HOPS 必须为非负整数，已按 0 处理");
+  }
+  return 0;
+}
+
 // 入口负责清洗并追加 XFF；默认取最右侧地址，跳过的地址数只用于已知代理链。
 export async function getClientIp(): Promise<string> {
   const h = await headers();
   const fwd = h.get("x-forwarded-for");
-  const configured = process.env.TRUSTED_PROXY_HOPS ?? "0";
-  if (!/^\d+$/.test(configured) || !Number.isSafeInteger(Number(configured))) {
-    throw new Error("TRUSTED_PROXY_HOPS 必须为非负整数");
-  }
-  const trustedHops = Number(configured);
+  const trustedHops = trustedProxyHops();
   if (fwd) {
     const addresses = fwd.split(",").map((value) => value.trim()).filter(Boolean);
     const address = addresses[Math.max(0, addresses.length - trustedHops - 1)];

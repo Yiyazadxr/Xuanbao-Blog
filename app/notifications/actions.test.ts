@@ -3,7 +3,15 @@ const { getFreshUser, updateMany, deleteMany } = vi.hoisted(() => ({ getFreshUse
 vi.mock("@/lib/auth", () => ({ getFreshUser }));
 vi.mock("@/lib/prisma", () => ({ prisma: { notification: { updateMany, deleteMany } } }));
 vi.mock("@/lib/notifications", () => ({ getUserNotifications: vi.fn(), getUnreadSummary: vi.fn() }));
-import { markNotificationRead, markAllNotificationsRead, markCategoryRead, clearReadNotifications, deleteNotification } from "./actions";
+import { getUnreadSummary } from "@/lib/notifications";
+import {
+  clearReadNotifications,
+  deleteNotification,
+  getNotificationSummary,
+  markAllNotificationsRead,
+  markCategoryRead,
+  markNotificationRead,
+} from "./actions";
 
 beforeEach(() => { vi.resetAllMocks(); getFreshUser.mockResolvedValue({ id: "owner" }); });
 
@@ -35,6 +43,16 @@ it("通知写入限定当前用户", async () => {
   expect(updateMany).toHaveBeenLastCalledWith({ where: { userId: "owner", category: "like", read: false }, data: { read: true } });
   await expect(deleteNotification("notice")).resolves.toEqual({ ok: true });
   expect(deleteMany).toHaveBeenLastCalledWith({ where: { id: "notice", userId: "owner" } });
+});
+
+it("铃铛摘要只查未读数，不加载整页通知", async () => {
+  const summary = {
+    total: 2,
+    byCategory: { system: 1, like: 1, comment: 0 },
+  };
+  vi.mocked(getUnreadSummary).mockResolvedValue(summary);
+  await expect(getNotificationSummary()).resolves.toEqual(summary);
+  expect(getUnreadSummary).toHaveBeenCalledWith("owner");
 });
 
 it("数据库失败时返回受控错误，不暴露异常", async () => {

@@ -93,7 +93,8 @@ export async function getDashboardData(range: DashboardRange): Promise<Dashboard
     pendingComments,
     pendingRequests,
     topRows,
-    categoryRows,
+    categoryGroups,
+    categoryMeta,
   ] = await Promise.all([
     prisma.dailyViewStat.findMany({
       where: { date: { gte: windowStartKey, lte: endKey } },
@@ -132,11 +133,14 @@ export async function getDashboardData(range: DashboardRange): Promise<Dashboard
         _count: { select: { comments: { where: { isApproved: true } }, likes: true } },
       },
     }),
-    // 分类维度同时要文章数与浏览量：一次取回后内存聚合，避免每个分类各查一次
-    prisma.post.findMany({
+    // 分类维度交给数据库聚合，避免把全部公开文章读进内存。
+    prisma.post.groupBy({
+      by: ["categoryId"],
       where: PUBLISHED_FILTER,
-      select: { viewCount: true, category: { select: { id: true, name: true, slug: true } } },
+      _count: { _all: true },
+      _sum: { viewCount: true },
     }),
+    prisma.category.findMany({ select: { id: true, name: true, slug: true } }),
   ]);
 
   // 按天分桶（东八区），缺失的日期补 0，保证趋势图 X 轴连续
@@ -198,37 +202,34 @@ export async function getDashboardData(range: DashboardRange): Promise<Dashboard
       comments: p._count.comments,
       likes: p._count.likes,
     })),
-    categories: aggregateCategories(categoryRows),
+    categories: aggregateCategories(categoryGroups, categoryMeta),
   };
 }
 
-type CategoryRow = {
-  viewCount: number;
-  category: { id: string; name: string; slug: string } | null;
+type CategoryGroup = {
+  categoryId: string | null;
+  _count: { _all: number };
+  _sum: { viewCount: number | null };
 };
 
-// 分类聚合：按文章数降序，超出上限的合并为「其他」
-function aggregateCategories(rows: CategoryRow[]): CategoryStat[] {
-  const map = new Map<string, CategoryStat>();
-  for (const row of rows) {
-    const c = row.category;
-    const key = c?.id ?? "__none__";
-    const hit = map.get(key);
-    if (hit) {
-      hit.posts += 1;
-      hit.views += row.viewCount;
-    } else {
-      map.set(key, {
-        id: key,
-        name: c?.name ?? "未分类",
-        slug: c?.slug ?? "",
-        posts: 1,
-        views: row.viewCount,
-      });
-    }
-  }
+type CategoryMeta = { id: string; name: string; slug: string };
 
-  const sorted = [...map.values()].sort((a, b) => b.posts - a.posts || b.views - a.views);
+// 分类聚合：按文章数降序，超出上限的合并为「其他」
+function aggregateCategories(groups: CategoryGroup[], meta: CategoryMeta[]): CategoryStat[] {
+  const metaById = new Map(meta.map((category) => [category.id, category]));
+  const sorted = groups
+    .map((group): CategoryStat => {
+      const category = group.categoryId ? metaById.get(group.categoryId) : undefined;
+      return {
+        id: group.categoryId ?? "__none__",
+        name: category?.name ?? "未分类",
+        slug: category?.slug ?? "",
+        posts: group._count._all,
+        views: group._sum.viewCount ?? 0,
+      };
+    })
+    .sort((a, b) => b.posts - a.posts || b.views - a.views);
+
   if (sorted.length <= MAX_CATEGORY_SLICES + 1) return sorted;
 
   const head = sorted.slice(0, MAX_CATEGORY_SLICES);

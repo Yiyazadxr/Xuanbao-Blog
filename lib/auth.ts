@@ -21,10 +21,15 @@ const LOGIN_WINDOW_MS = 15 * 60 * 1000;
 
 // 登录失败才计数：IP 维度挡住撞库，邮箱维度限制单账号尝试次数。
 async function recordLoginFailure(ip: string, email: string): Promise<void> {
-  await Promise.all([
-    rateLimit.checkAndHit("login-ip", ip, LOGIN_IP_LIMIT, LOGIN_WINDOW_MS),
-    rateLimit.checkAndHit("login-email", email, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW_MS),
-  ]);
+  try {
+    await Promise.all([
+      rateLimit.checkAndHit("login-ip", ip, LOGIN_IP_LIMIT, LOGIN_WINDOW_MS),
+      rateLimit.checkAndHit("login-email", email, LOGIN_EMAIL_LIMIT, LOGIN_WINDOW_MS),
+    ]);
+  } catch (e) {
+    // 计数写入失败不应把“密码错误”变成 500；登录本身仍会失败。
+    console.error("登录失败计数写入失败：", e);
+  }
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({

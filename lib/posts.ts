@@ -4,6 +4,7 @@ import { QUERY_LIMITS, SITE } from "@/lib/constants";
 import { recordDailyView } from "@/lib/daily-stats";
 import { TZ_OFFSET_MS } from "@/lib/day-key";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { fetchPage } from "@/lib/pagination";
 import { prisma } from "@/lib/prisma";
 import { readingTimeFromWordCount, daysBetween, searchSnippet } from "@/lib/utils";
 
@@ -86,19 +87,20 @@ export async function getPosts({
 
   const pageSize = typeof take === "number" && Number.isSafeInteger(take) && take > 0
     ? Math.min(take, QUERY_LIMITS.postList) : QUERY_LIMITS.postList;
-  const offset = Number.isSafeInteger(skip) && skip >= 0 ? skip : 0;
-  const total = await prisma.post.count({ where });
-  const effectiveSkip = total === 0 ? 0 : Math.min(offset, Math.floor((total - 1) / pageSize) * pageSize);
-  const rows = await prisma.post.findMany({
-    where,
-    orderBy: [{ pinned: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-    select: listSelect,
-    skip: effectiveSkip,
-    take: pageSize,
+  const { rows, total } = await fetchPage({
+    count: () => prisma.post.count({ where }),
+    fetchRows: (pageSkip, pageTake) => prisma.post.findMany({
+      where,
+      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+      select: listSelect,
+      skip: pageSkip,
+      take: pageTake,
+    }),
+    requestedSkip: skip,
+    pageSize,
   });
 
-  const posts = rows.map(toListItem);
-  return { posts, total };
+  return { posts: rows.map(toListItem), total };
 }
 
 // 首页精选文章
@@ -127,15 +129,17 @@ export async function searchPosts(query: string, skip: number, take: number) {
   };
   const pageSize = Number.isSafeInteger(take) && take > 0
     ? Math.min(take, QUERY_LIMITS.searchPage) : QUERY_LIMITS.searchPage;
-  const offset = Number.isSafeInteger(skip) && skip >= 0 ? skip : 0;
-  const total = await prisma.post.count({ where });
-  const effectiveSkip = total === 0 ? 0 : Math.min(offset, Math.floor((total - 1) / pageSize) * pageSize);
-  const rows = await prisma.post.findMany({
-    where,
-    orderBy: [{ pinned: "desc" }, { createdAt: "desc" }, { id: "desc" }],
-    select: { ...listSelect, searchText: true },
-    skip: effectiveSkip,
-    take: pageSize,
+  const { rows, total } = await fetchPage({
+    count: () => prisma.post.count({ where }),
+    fetchRows: (pageSkip, pageTake) => prisma.post.findMany({
+      where,
+      orderBy: [{ pinned: "desc" }, { createdAt: "desc" }, { id: "desc" }],
+      select: { ...listSelect, searchText: true },
+      skip: pageSkip,
+      take: pageTake,
+    }),
+    requestedSkip: skip,
+    pageSize,
   });
   return {
     posts: rows.map((row) => ({
@@ -220,23 +224,22 @@ export async function getSeriesChapters(seriesId: string): Promise<SeriesChapter
 }
 
 // 同一系列内的上一篇 / 下一篇（按发布时间升序，即系列连载顺序）
-export async function getSeriesAdjacent(seriesId: string, postId: string) {
+// 调用方已持有当前文章的创建时间与 ID，无需在事务外再查一次当前行。
+export async function getSeriesAdjacent(seriesId: string, postId: string, createdAt: Date) {
   const select = { id: true, title: true, slug: true, createdAt: true } as const;
-  const current = await prisma.post.findFirst({ where: { ...PUBLISHED_FILTER, id: postId, seriesId }, select });
-  if (!current) return { prev: null, next: null };
   const [prev, next] = await Promise.all([
     prisma.post.findFirst({
       where: { ...PUBLISHED_FILTER, seriesId, OR: [
-        { createdAt: { lt: current.createdAt } },
-        { createdAt: current.createdAt, id: { lt: current.id } },
+        { createdAt: { lt: createdAt } },
+        { createdAt, id: { lt: postId } },
       ] },
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       select,
     }),
     prisma.post.findFirst({
       where: { ...PUBLISHED_FILTER, seriesId, OR: [
-        { createdAt: { gt: current.createdAt } },
-        { createdAt: current.createdAt, id: { gt: current.id } },
+        { createdAt: { gt: createdAt } },
+        { createdAt, id: { gt: postId } },
       ] },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
       select,
@@ -288,36 +291,39 @@ export async function getRelatedPosts(post: {
   categoryId: string | null;
   tagIds: string[];
 }): Promise<PostListItem[]> {
+  // 分类与标签并行取候选，再按「分类优先」合并去重；多数文章都能少一次往返。
+  const [categoryRows, tagRows] = await Promise.all([
+    post.categoryId
+      ? prisma.post.findMany({
+          where: { ...PUBLISHED_FILTER, categoryId: post.categoryId, id: { not: post.id } },
+          orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
+          take: RELATED_COUNT,
+          select: listSelect,
+        })
+      : Promise.resolve([]),
+    post.tagIds.length > 0
+      ? prisma.post.findMany({
+          where: {
+            ...PUBLISHED_FILTER,
+            id: { not: post.id },
+            tags: { some: { tagId: { in: post.tagIds } } },
+          },
+          orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
+          // 多取一倍，抵消与分类候选重复后被去重的情况。
+          take: RELATED_COUNT * 2,
+          select: listSelect,
+        })
+      : Promise.resolve([]),
+  ]);
+
   const picked: PostListItem[] = [];
-  const exclude = new Set<string>([post.id]);
-
-  if (post.categoryId) {
-    const rows = await prisma.post.findMany({
-      where: { ...PUBLISHED_FILTER, categoryId: post.categoryId, id: { notIn: [...exclude] } },
-      orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
-      take: RELATED_COUNT,
-      select: listSelect,
-    });
-    for (const row of rows) {
-      picked.push(toListItem(row));
-      exclude.add(row.id);
-    }
+  const seen = new Set<string>([post.id]);
+  for (const row of [...categoryRows, ...tagRows]) {
+    if (picked.length >= RELATED_COUNT) break;
+    if (seen.has(row.id)) continue;
+    seen.add(row.id);
+    picked.push(toListItem(row));
   }
-
-  if (picked.length < RELATED_COUNT && post.tagIds.length > 0) {
-    const rows = await prisma.post.findMany({
-      where: {
-        ...PUBLISHED_FILTER,
-        id: { notIn: [...exclude] },
-        tags: { some: { tagId: { in: post.tagIds } } },
-      },
-      orderBy: [{ viewCount: "desc" }, { createdAt: "desc" }],
-      take: RELATED_COUNT - picked.length,
-      select: listSelect,
-    });
-    for (const row of rows) picked.push(toListItem(row));
-  }
-
   return picked;
 }
 

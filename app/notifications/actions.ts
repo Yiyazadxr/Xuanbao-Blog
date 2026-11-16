@@ -22,6 +22,13 @@ export type NotificationsResult = {
   unread: NotificationUnreadSummary;
 };
 
+// 铃铛挂载时只需要未读角标，避免为未打开的面板下载整页通知。
+export async function getNotificationSummary(): Promise<NotificationUnreadSummary> {
+  const user = await getFreshUser();
+  if (!user) return { total: 0, byCategory: { system: 0, like: 0, comment: 0 } };
+  return getUnreadSummary(user.id);
+}
+
 export async function getNotifications(
   category: NotificationCategory | "all" = "all",
   cursor?: NotificationCursor

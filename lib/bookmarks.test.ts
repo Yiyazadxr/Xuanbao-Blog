@@ -37,7 +37,8 @@ it("越界页钳到末页，空列表回到第一页", async () => {
   mocks.count.mockResolvedValueOnce(121).mockResolvedValueOnce(0);
 
   expect((await getBookmarkedPosts("user-1", 999)).page).toBe(14);
-  expect(mocks.findMany.mock.calls[0][0].skip).toBe(117);
+  // 首次并行查询使用请求页，发现越界后补查末页（117）。
+  expect(mocks.findMany.mock.calls[1][0].skip).toBe(117);
   expect((await getBookmarkedPosts("user-1", Infinity)).page).toBe(1);
-  expect(mocks.findMany.mock.calls[1][0].skip).toBe(0);
+  expect(mocks.findMany.mock.calls[2][0].skip).toBe(0);
 });

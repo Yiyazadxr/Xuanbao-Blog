@@ -1,7 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const mocks = vi.hoisted(() => ({ headers: vi.fn(), query: vi.fn(), deleteMany: vi.fn() }));
+const mocks = vi.hoisted(() => ({ headers: vi.fn(), query: vi.fn(), deleteMany: vi.fn(), findUnique: vi.fn() }));
 vi.mock("next/headers", () => ({ headers: mocks.headers }));
-vi.mock("@/lib/prisma", () => ({ prisma: { $queryRaw: mocks.query, rateLimit: { deleteMany: mocks.deleteMany } } }));
+vi.mock("@/lib/prisma", () => ({
+  prisma: {
+    $queryRaw: mocks.query,
+    rateLimit: { deleteMany: mocks.deleteMany, findUnique: mocks.findUnique },
+  },
+}));
 import { cleanupExpiredRateLimits, getClientIp, rateLimit } from "./rate-limit";
 describe("可信代理和限流故障", () => {
   beforeEach(() => { vi.resetAllMocks(); vi.stubEnv("TRUSTED_PROXY_HOPS", "0"); });
@@ -19,11 +24,26 @@ describe("可信代理和限流故障", () => {
     mocks.headers.mockResolvedValue(new Headers({ "x-forwarded-for": "random-text" }));
     expect(await getClientIp()).toBe("unknown");
   });
-  it("非法代理配置不静默接受", async () => {
+  it("非法代理配置回落到最右侧地址，不阻断请求", async () => {
     vi.stubEnv("TRUSTED_PROXY_HOPS", "1garbage");
-    mocks.headers.mockResolvedValue(new Headers());
-    await expect(getClientIp()).rejects.toThrow("TRUSTED_PROXY_HOPS");
+    mocks.headers.mockResolvedValue(
+      new Headers({ "x-forwarded-for": "1.1.1.1, 203.0.113.2" })
+    );
+    expect(await getClientIp()).toBe("203.0.113.2");
   });
+  it("预检在达到上限时阻止下一次请求", async () => {
+    const resetAt = new Date(Date.now() + 60_000);
+    mocks.findUnique.mockResolvedValue({ key: "k", count: 5, resetAt });
+    await expect(rateLimit.isBlocked("k", "v", 5)).resolves.toEqual({
+      blocked: true,
+      retryAfterSec: expect.any(Number),
+    });
+    await expect(rateLimit.isBlocked("k", "v", 6)).resolves.toEqual({
+      blocked: false,
+      retryAfterSec: 0,
+    });
+  });
+
   it("计数器无返回值不放行", async () => {
     mocks.query.mockResolvedValue([]);
     await expect(rateLimit.checkAndHit("test", "ip", 5, 60_000)).rejects.toThrow("限流计数未返回结果");

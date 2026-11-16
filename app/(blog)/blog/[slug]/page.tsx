@@ -95,7 +95,7 @@ export default async function BlogPostPage({
   const readTime = readingTimeFromWordCount(post.wordCount);
   const [adjacent, seriesAdjacent, related, seriesChapters] = await Promise.all([
     getAdjacentPosts(post.id, post.createdAt),
-    post.seriesId ? getSeriesAdjacent(post.seriesId, post.id) : Promise.resolve(null),
+    post.seriesId ? getSeriesAdjacent(post.seriesId, post.id, post.createdAt) : Promise.resolve(null),
     getRelatedPosts({
       id: post.id,
       categoryId: post.categoryId,

@@ -42,10 +42,12 @@ describe("文章列表查询边界", () => {
     expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ take: QUERY_LIMITS.postList }));
   });
 
-  it("空库仍请求第一页并返回空列表", async () => {
+  it("空库返回空列表，且不补查末页", async () => {
     count.mockResolvedValue(0);
     expect(await getPosts({ skip: 999, take: 9 })).toEqual({ posts: [], total: 0 });
-    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 0 }));
+    // 总数与首页并行查询；total=0 时不再补一次末页查询。
+    expect(findMany).toHaveBeenCalledTimes(1);
+    expect(findMany).toHaveBeenCalledWith(expect.objectContaining({ skip: 999, take: 9 }));
   });
 });
 
@@ -75,12 +77,17 @@ it("全文搜索覆盖全部公开文章并按页返回命中字段", async () =
 
 it("同时间的系列文章通过 ID 确定相邻顺序", async () => {
   const createdAt = new Date("2026-01-01T00:00:00Z");
-  findFirst.mockResolvedValueOnce({ id: "b", createdAt })
+  findFirst
     .mockResolvedValueOnce({ title: "前文", slug: "a" })
     .mockResolvedValueOnce({ title: "后文", slug: "c" });
-  expect(await getSeriesAdjacent("series", "b")).toEqual({ prev: { title: "前文", slug: "a" }, next: { title: "后文", slug: "c" } });
-  expect(findFirst.mock.calls[1][0].where.OR).toContainEqual({ createdAt, id: { lt: "b" } });
-  expect(findFirst.mock.calls[2][0].where.OR).toContainEqual({ createdAt, id: { gt: "b" } });
+  expect(await getSeriesAdjacent("series", "b", createdAt)).toEqual({
+    prev: { title: "前文", slug: "a" },
+    next: { title: "后文", slug: "c" },
+  });
+  expect(findFirst.mock.calls[0][0].where.OR).toContainEqual({ createdAt, id: { lt: "b" } });
+  expect(findFirst.mock.calls[1][0].where.OR).toContainEqual({ createdAt, id: { gt: "b" } });
+  // 当前文章的创建时间由调用方传入，不再多查一次当前行。
+  expect(findFirst).toHaveBeenCalledTimes(2);
 });
 
 it("旧 slug 只解析到仍公开的当前文章", async () => {
