@@ -44,6 +44,19 @@ describe("可信代理和限流故障", () => {
     });
   });
 
+  it("限流键不写入明文邮箱与 IP，同值稳定、异值分离", async () => {
+    mocks.query.mockResolvedValue([{ count: 1, resetAt: new Date(Date.now() + 60_000) }]);
+    await rateLimit.checkAndHit("login-email", "user@example.com", 5, 60_000);
+    await rateLimit.checkAndHit("login-email", "user@example.com", 5, 60_000);
+    await rateLimit.checkAndHit("login-email", "other@example.com", 5, 60_000);
+
+    const [first, second, third] = mocks.query.mock.calls.map((call) => call[1] as string);
+    expect(first).toMatch(/^login-email:[A-Za-z0-9_-]{32}$/);
+    expect(first).not.toContain("user@example.com");
+    expect(first).toBe(second);
+    expect(third).not.toBe(first);
+  });
+
   it("计数器无返回值不放行", async () => {
     mocks.query.mockResolvedValue([]);
     await expect(rateLimit.checkAndHit("test", "ip", 5, 60_000)).rejects.toThrow("限流计数未返回结果");

@@ -6,7 +6,6 @@ import { recordRead } from "@/lib/reading";
 import { prisma } from "@/lib/prisma";
 import { getClientIp, rateLimit } from "@/lib/rate-limit";
 import { parseInput, postViewSchema } from "@/lib/validation";
-import { createHash } from "node:crypto";
 
 // ISR 页面在客户端上报浏览；同一 SPA 会话去重，失败不影响页面。
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
@@ -48,7 +47,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const ip = await getClientIp();
   // 无可信地址时仅允许已登录用户记录阅读，不查询匿名文章或写浏览量。
   if (ip === "unknown" && !user) return NextResponse.json({ ok: true });
-  const key = ip === "unknown" ? null : createHash("sha256").update(ip).digest("hex");
+  // 限流层统一哈希键值，这里保留原始地址用于与文章 ID 组合。
+  const key = ip === "unknown" ? null : ip;
   const pre = key ? await rateLimit.isBlocked("view-ip", key, 30) : null;
   const check = key ? pre!.blocked ? pre : await rateLimit.checkAndHit("view-ip", key, 30, 60_000) : null;
   // 匿名超限请求仍在文章查询前返回。

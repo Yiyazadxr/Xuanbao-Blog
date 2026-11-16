@@ -2,10 +2,21 @@
 import { headers } from "next/headers";
 import { runAfter } from "@/lib/deferred";
 import { prisma } from "@/lib/prisma";
+import { createHmac } from "node:crypto";
 import { isIP } from "node:net";
 
+// 邮箱、IP 与用户 ID 不以明文写入限流表；HMAC 避免低熵值被彩虹表反推。
+// 密钥变更会让现有窗口整体失效一次，属于可接受的运维副作用。
+let keySecret: string | undefined;
+
+function getKeySecret(): string {
+  return (keySecret ??=
+    process.env.RATE_LIMIT_SECRET || process.env.AUTH_SECRET || "xuanbao-rate-limit");
+}
+
 function keyName(prefix: string, value: string) {
-  return `${prefix}:${value}`;
+  const digest = createHmac("sha256", getKeySecret()).update(value).digest("base64url");
+  return `${prefix}:${digest.slice(0, 32)}`;
 }
 
 export type RateLimitVerdict = { blocked: boolean; retryAfterSec: number };

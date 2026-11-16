@@ -1,6 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createHash } from "node:crypto";
-
 const mocks = vi.hoisted(() => ({
   count: vi.fn(),
   user: vi.fn(),
@@ -84,7 +82,7 @@ describe("申请入口防邮箱枚举", () => {
     expect(mocks.notify).not.toHaveBeenCalled();
     expect(mocks.checkAndHit).toHaveBeenCalledWith(
       "verification-email",
-      createHash("sha256").update("test@example.com").digest("hex"),
+      "test@example.com",
       5,
       24 * 60 * 60 * 1000
     );
@@ -99,7 +97,7 @@ describe("申请入口防邮箱枚举", () => {
     expect(result).toEqual({ ok: true });
     expect(mocks.checkAndHit).toHaveBeenCalledWith(
       "verification-email",
-      createHash("sha256").update("test@example.com").digest("hex"),
+      "test@example.com",
       5,
       24 * 60 * 60 * 1000
     );

@@ -28,6 +28,8 @@ const RETENTION_DAYS = 7;
 // 仅合并窗口内的未读通知。
 const AGGREGATE_WINDOW_MS = 24 * 60 * 60 * 1000;
 const MAX_ACTOR_NAMES = 20;
+// 并发合并冲突时重读重试；耗尽后退化为新建，宁可多一条也不丢事件。
+const MAX_MERGE_ATTEMPTS = 3;
 // 清理按概率惰性触发。
 const CLEANUP_PROBABILITY = 0.05;
 
@@ -76,45 +78,54 @@ async function mergeIntoAggregate(
 ) {
   const since = new Date(Date.now() - AGGREGATE_WINDOW_MS);
   const retentionCutoff = new Date(Date.now() - RETENTION_DAYS * 24 * 60 * 60 * 1000);
-  const existing = await prisma.notification.findFirst({
-    where: {
-      userId,
-      aggregateKey: data.aggregateKey,
-      read: false,
-      createdAt: { gt: retentionCutoff },
-      lastMergedAt: { gt: since },
-    },
-    orderBy: { lastMergedAt: "desc" },
-    select: { id: true, actorNames: true },
-  });
-  if (!existing) return null;
 
-  // 同一触发者只更新昵称顺序，不增加人数。
-  const names = parseActorNames(existing.actorNames);
-  const deduped = actor
-    ? [actor, ...names.filter((n) => n !== actor)].slice(0, MAX_ACTOR_NAMES)
-    : names;
+  for (let attempt = 0; attempt < MAX_MERGE_ATTEMPTS; attempt++) {
+    const existing = await prisma.notification.findFirst({
+      where: {
+        userId,
+        aggregateKey: data.aggregateKey,
+        read: false,
+        createdAt: { gt: retentionCutoff },
+        lastMergedAt: { gt: since },
+      },
+      orderBy: { lastMergedAt: "desc" },
+      select: { id: true, actorNames: true },
+    });
+    if (!existing) return null;
 
-  return prisma.notification.update({
-    where: { id: existing.id },
-    data: {
-      count: { increment: 1 },
-      actorNames: deduped.length > 0 ? JSON.stringify(deduped) : null,
-      // 无昵称的系统事件不清空 actorName。
-      ...(actor ? { actorName: actor } : {}),
-      title: data.title,
-      ...(data.link ? { link: data.link } : {}),
-      // lastMergedAt 用于聚合和排序；createdAt 仅用于清理。
-      lastMergedAt: new Date(),
-    },
-  });
+    // 同一触发者只更新昵称顺序，不增加人数。
+    const names = parseActorNames(existing.actorNames);
+    const deduped = actor
+      ? [actor, ...names.filter((n) => n !== actor)].slice(0, MAX_ACTOR_NAMES)
+      : names;
+
+    // 以读到的 actorNames 作版本条件：并发合并只有一方能写入，另一方重读后重新合并。
+    const updated = await prisma.notification.updateMany({
+      where: { id: existing.id, read: false, actorNames: existing.actorNames },
+      data: {
+        count: { increment: 1 },
+        actorNames: deduped.length > 0 ? JSON.stringify(deduped) : null,
+        // 无昵称的系统事件不清空 actorName。
+        ...(actor ? { actorName: actor } : {}),
+        title: data.title,
+        ...(data.link ? { link: data.link } : {}),
+        // lastMergedAt 用于聚合和排序；createdAt 仅用于清理。
+        lastMergedAt: new Date(),
+      },
+    });
+    if (updated.count === 1) {
+      return prisma.notification.findUnique({ where: { id: existing.id } });
+    }
+  }
+
+  return null;
 }
 
 async function upsertNotification(userId: string, data: NotificationData) {
   const actor = data.actorName?.trim() || null;
 
   if (data.aggregateKey) {
-    // 并发时可能产生两条等价通知；不影响业务正确性，不加分布式锁。
+    // 重试仍冲突时退化为新建，避免昵称互相覆盖；多一条聚合通知不影响业务正确性。
     const merged = await mergeIntoAggregate(userId, data, actor);
     // 合并路径同样需要清理，否则只收聚合通知的用户会长期超过上限。
     if (merged) {

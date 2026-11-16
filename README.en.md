@@ -156,6 +156,7 @@ pnpm dev                    # start the dev server → http://localhost:3000
 | `AUTH_SECRET` | Auth.js secret (generate with `openssl rand -base64 32`) |
 | `AUTH_TRUST_HOST` | Off in production by default; set to `true` for self-hosting when the Host header must be trusted |
 | `TRUSTED_PROXY_HOPS` | Number of proxy addresses to skip on the right side of `X-Forwarded-For` (used to derive the client IP for rate limiting); set `0` when the platform rewrites it as a single client address |
+| `RATE_LIMIT_SECRET` | Optional; HMAC key for rate-limit identifiers, defaults to `AUTH_SECRET`; rotating it resets active windows once |
 | `NEXT_PUBLIC_SITE_URL` | Canonical domain, used by sitemap / RSS / metadata and verification email links |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | The seed script creates the super admin from these |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | QQ Mail SMTP, used for email verification and review notifications (applications cannot be submitted when unset) |

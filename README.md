@@ -156,6 +156,7 @@ pnpm dev                    # 启动开发服务器 → http://localhost:3000
 | `AUTH_SECRET` | Auth.js 密钥（`openssl rand -base64 32` 生成） |
 | `AUTH_TRUST_HOST` | 生产环境默认关闭；自托管需要信任 Host 头时设为 `true` |
 | `TRUSTED_PROXY_HOPS` | `X-Forwarded-For` 右侧需要跳过的代理地址数（限流取客户端 IP 用）；平台覆写为单个客户端地址时设 `0` |
+| `RATE_LIMIT_SECRET` | 可选；限流键 HMAC 密钥，默认使用 `AUTH_SECRET`，轮换会让现有窗口重置一次 |
 | `NEXT_PUBLIC_SITE_URL` | 正式域名，用于 sitemap / RSS / 元数据与验证邮件链接 |
 | `ADMIN_EMAIL` / `ADMIN_PASSWORD` | 种子脚本创建超级管理员 |
 | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USER` / `SMTP_PASS` | QQ 邮箱 SMTP，用于邮箱验证与审核通知（未配置则无法提交申请） |

@@ -1,4 +1,3 @@
-import { createHash } from "node:crypto";
 import {
   createVerificationToken,
   VERIFICATION_TTL_MS,
@@ -15,10 +14,9 @@ import { rateLimit } from "@/lib/rate-limit";
 const VERIFICATION_EXPIRES_HOURS = VERIFICATION_TTL_MS / (60 * 60 * 1000);
 const VERIFICATION_EMAIL_LIMIT = 5;
 
-// 重发会更新同一申请，不能用申请记录数限制邮件发送；哈希邮箱避免限流键存明文地址。
+// 重发会更新同一申请，不能用申请记录数限制邮件发送；rate-limit 会哈希键值，邮箱不以明文落库。
 async function canSendVerification(email: string): Promise<boolean> {
-  const key = createHash("sha256").update(email).digest("hex");
-  const check = await rateLimit.checkAndHit("verification-email", key, VERIFICATION_EMAIL_LIMIT, VERIFICATION_TTL_MS);
+  const check = await rateLimit.checkAndHit("verification-email", email, VERIFICATION_EMAIL_LIMIT, VERIFICATION_TTL_MS);
   return !check.blocked;
 }
 
